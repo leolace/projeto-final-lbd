@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { getApiErrorMessage } from "../../../api";
 import { DataGrid, type DataGridColumn } from "../../../components/DataGrid";
 import type { ReportRowsResponse } from "../../../types";
+import type { ReportPageSize } from "../hooks/useReportPagination";
 
 type ReportPageFrameProps = {
   columns: DataGridColumn[];
@@ -12,11 +13,11 @@ type ReportPageFrameProps = {
   isLoading: boolean;
   pagination: {
     page: number;
-    pageSize: number;
-    pageSizeOptions: number[];
+    pageSize: ReportPageSize;
+    pageSizeOptions: ReportPageSize[];
     reportPagination?: ReportRowsResponse["pagination"];
     onPageChange: (page: number) => void;
-    onPageSizeChange: (pageSize: number) => void;
+    onPageSizeChange: (pageSize: ReportPageSize) => void;
   };
   rows: Array<Record<string, unknown>>;
   title: string;
@@ -36,20 +37,20 @@ export function ReportPageFrame({
 
   return (
     <section className="space-y-6">
-      <div className="flex flex-col gap-4 border-b border-zinc-800 pb-6 sm:flex-row sm:items-start sm:justify-between">
+      <div className="flex flex-col gap-4 border-b border-gray-200 pb-6 sm:flex-row sm:items-start sm:justify-between">
         <div className="max-w-3xl">
-          <span className="grid h-11 w-11 place-items-center rounded-md bg-zinc-900 text-cyan-300">
+          <span className="grid h-11 w-11 place-items-center rounded-md border border-gray-300 bg-gray-50 text-black">
             <Icon className="h-5 w-5" />
           </span>
-          <p className="mt-5 text-sm font-medium uppercase tracking-wide text-cyan-300">
+          <p className="mt-5 text-sm font-medium uppercase tracking-wide text-gray-600">
             Relatório
           </p>
           <h2 className="mt-2 text-3xl font-semibold">{title}</h2>
-          <p className="mt-2 text-sm leading-6 text-zinc-400">{description}</p>
+          <p className="mt-2 text-sm leading-6 text-gray-600">{description}</p>
         </div>
 
         <Link
-          className="inline-flex h-10 items-center justify-center gap-2 rounded-md bg-zinc-900 px-3 text-sm font-medium text-zinc-200 transition hover:bg-zinc-800"
+          className="inline-flex h-10 items-center justify-center gap-2 rounded-md border border-gray-300 bg-white px-3 text-sm font-medium text-black transition hover:border-black hover:bg-gray-100"
           to="/reports"
         >
           <ArrowLeft className="h-4 w-4" />
@@ -58,13 +59,13 @@ export function ReportPageFrame({
       </div>
 
       {isLoading ? (
-        <div className="rounded-lg border border-zinc-800 bg-zinc-900 px-4 py-8 text-center text-sm text-zinc-400">
+        <div className="rounded-lg border border-gray-300 bg-gray-50 px-4 py-8 text-center text-sm text-gray-600">
           Carregando relatório...
         </div>
       ) : null}
 
       {error ? (
-        <div className="rounded-lg border border-red-900/60 bg-red-950/30 px-4 py-3 text-sm text-red-200">
+        <div className="rounded-lg border border-gray-300 bg-gray-50 px-4 py-3 text-sm text-black">
           {getApiErrorMessage(error)}
         </div>
       ) : null}

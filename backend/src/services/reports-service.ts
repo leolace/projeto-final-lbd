@@ -5,6 +5,7 @@ import type {
 } from "../utils/pagination.js";
 import {
   createPaginationMeta,
+  getLimit,
   getOffset,
   getTotalFromRows,
   stripTotalCount
@@ -37,7 +38,10 @@ function createSingleRowReport(
   pagination: PaginationInput
 ): PaginatedReport {
   const offset = getOffset(pagination);
-  const visibleRows = rows.slice(offset, offset + pagination.pageSize);
+  const visibleRows =
+    pagination.pageSize === "all"
+      ? rows
+      : rows.slice(offset, offset + pagination.pageSize);
 
   return {
     rows: visibleRows,
@@ -78,7 +82,7 @@ export async function getAdminTopDriversReport(pagination: PaginationInput) {
       order by total_points desc nulls last, driver_name asc
       limit $1 offset $2
     `,
-    [pagination.pageSize, getOffset(pagination)]
+    [getLimit(pagination), getOffset(pagination)]
   );
 
   return createPaginatedReport(result.rows, pagination);
@@ -104,7 +108,7 @@ export async function getAdminTopConstructorsReport(pagination: PaginationInput)
       order by total_points desc nulls last, constructor_name asc
       limit $1 offset $2
     `,
-    [pagination.pageSize, getOffset(pagination)]
+    [getLimit(pagination), getOffset(pagination)]
   );
 
   return createPaginatedReport(result.rows, pagination);
@@ -136,7 +140,7 @@ export async function getConstructorDriversReport(
       order by total_points desc nulls last, driver_name asc
       limit $2 offset $3
     `,
-    [user.userId, pagination.pageSize, getOffset(pagination)]
+    [user.userId, getLimit(pagination), getOffset(pagination)]
   );
 
   return createPaginatedReport(result.rows, pagination);
@@ -165,7 +169,7 @@ export async function getConstructorRaceResultsReport(
       order by ra.race_date desc, ra.round desc, r.position_order asc
       limit $2 offset $3
     `,
-    [user.userId, pagination.pageSize, getOffset(pagination)]
+    [user.userId, getLimit(pagination), getOffset(pagination)]
   );
 
   return createPaginatedReport(result.rows, pagination);
@@ -196,7 +200,7 @@ export async function getDriverRaceResultsReport(
       order by ra.race_date desc, ra.round desc
       limit $2 offset $3
     `,
-    [user.userId, pagination.pageSize, getOffset(pagination)]
+    [user.userId, getLimit(pagination), getOffset(pagination)]
   );
 
   return createPaginatedReport(result.rows, pagination);

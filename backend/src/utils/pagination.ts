@@ -1,12 +1,13 @@
 import type { Request } from "express";
 
 export const pageSizeOptions = [10, 20, 50] as const;
+export const allPageSize = "all";
 export const defaultPage = 1;
 export const defaultPageSize = 20;
 
 export type PaginationInput = {
   page: number;
-  pageSize: number;
+  pageSize: number | typeof allPageSize;
 };
 
 export type PaginationMeta = PaginationInput & {
@@ -30,6 +31,11 @@ function parsePositiveInteger(value: unknown) {
 
 export function getPaginationFromRequest(request: Request): PaginationInput {
   const page = parsePositiveInteger(request.query.page) ?? defaultPage;
+
+  if (request.query.pageSize === allPageSize) {
+    return { page: defaultPage, pageSize: allPageSize };
+  }
+
   const requestedPageSize =
     parsePositiveInteger(request.query.pageSize) ?? defaultPageSize;
   const pageSize = pageSizeOptions.includes(
@@ -42,7 +48,15 @@ export function getPaginationFromRequest(request: Request): PaginationInput {
 }
 
 export function getOffset({ page, pageSize }: PaginationInput) {
+  if (pageSize === allPageSize) {
+    return 0;
+  }
+
   return (page - 1) * pageSize;
+}
+
+export function getLimit({ pageSize }: PaginationInput) {
+  return pageSize === allPageSize ? null : pageSize;
 }
 
 export function createPaginationMeta(
@@ -52,7 +66,10 @@ export function createPaginationMeta(
   return {
     ...pagination,
     total,
-    totalPages: Math.max(1, Math.ceil(total / pagination.pageSize))
+    totalPages:
+      pagination.pageSize === allPageSize
+        ? 1
+        : Math.max(1, Math.ceil(total / pagination.pageSize))
   };
 }
 

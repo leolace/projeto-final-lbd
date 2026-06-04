@@ -31,30 +31,30 @@ export function LoginPage() {
   };
 
   return (
-    <main className="grid min-h-screen place-items-center bg-zinc-950 px-5 py-8 text-zinc-100">
+    <main className="grid min-h-screen place-items-center bg-white px-5 py-8 text-black">
       <section className="w-full max-w-md">
         <div className="mb-8">
-          <p className="text-sm font-medium uppercase tracking-wide text-cyan-300">
+          <p className="text-sm font-medium uppercase tracking-wide text-gray-600">
             Formula Data
           </p>
           <h1 className="mt-2 text-3xl font-semibold">Entrar na ferramenta</h1>
-          <p className="mt-3 text-sm leading-6 text-zinc-400">
+          <p className="mt-3 text-sm leading-6 text-gray-600">
             Acesse com seu usuário de administrador, escuderia ou piloto.
           </p>
         </div>
 
         <form
-          className="rounded-lg border border-zinc-800 bg-zinc-900 p-6"
+          className="rounded-lg border border-gray-300 bg-gray-50 p-6"
           onSubmit={submit}
         >
-          <label className="block text-sm font-medium text-zinc-200" htmlFor="login">
+          <label className="block text-sm font-medium text-black" htmlFor="login">
             Identificação
           </label>
-          <div className="mt-2 flex h-11 items-center gap-2 rounded-md border border-zinc-700 bg-zinc-950 px-3 focus-within:border-cyan-300">
-            <User className="h-4 w-4 text-zinc-500" />
+          <div className="mt-2 flex h-11 items-center gap-2 rounded-md border border-gray-300 bg-white px-3 focus-within:border-black">
+            <User className="h-4 w-4 text-gray-600" />
             <input
               autoComplete="username"
-              className="min-w-0 flex-1 bg-transparent text-sm outline-none placeholder:text-zinc-600"
+              className="min-w-0 flex-1 bg-transparent text-sm text-black outline-none placeholder:text-black/50"
               id="login"
               onChange={(event) => setLoginValue(event.target.value)}
               placeholder="admin, farina_d, alfa_c"
@@ -64,16 +64,16 @@ export function LoginPage() {
           </div>
 
           <label
-            className="mt-5 block text-sm font-medium text-zinc-200"
+            className="mt-5 block text-sm font-medium text-black"
             htmlFor="password"
           >
             Senha
           </label>
-          <div className="mt-2 flex h-11 items-center gap-2 rounded-md border border-zinc-700 bg-zinc-950 px-3 focus-within:border-cyan-300">
-            <KeyRound className="h-4 w-4 text-zinc-500" />
+          <div className="mt-2 flex h-11 items-center gap-2 rounded-md border border-gray-300 bg-white px-3 focus-within:border-black">
+            <KeyRound className="h-4 w-4 text-gray-600" />
             <input
               autoComplete="current-password"
-              className="min-w-0 flex-1 bg-transparent text-sm outline-none placeholder:text-zinc-600"
+              className="min-w-0 flex-1 bg-transparent text-sm text-black outline-none placeholder:text-black/50"
               id="password"
               onChange={(event) => setPassword(event.target.value)}
               placeholder="Senha"
@@ -84,13 +84,13 @@ export function LoginPage() {
           </div>
 
           {mutation.error ? (
-            <p className="mt-4 rounded-md border border-red-900/60 bg-red-950/40 px-3 py-2 text-sm text-red-200">
+            <p className="mt-4 rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-black">
               {getApiErrorMessage(mutation.error)}
             </p>
           ) : null}
 
           <button
-            className="mt-6 inline-flex h-11 w-full items-center justify-center gap-2 rounded-md bg-cyan-300 px-4 text-sm font-semibold text-zinc-950 transition hover:bg-cyan-200 disabled:cursor-not-allowed disabled:opacity-60"
+            className="mt-6 inline-flex h-11 w-full items-center justify-center gap-2 rounded-md border border-black bg-white px-4 text-sm font-semibold text-black transition hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-60"
             disabled={mutation.isPending}
             type="submit"
           >

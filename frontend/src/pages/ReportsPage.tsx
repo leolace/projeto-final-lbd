@@ -108,12 +108,12 @@ export function ReportsPage() {
 
   return (
     <section className="space-y-8">
-      <div className="border-b border-zinc-800 pb-6">
-        <p className="text-sm font-medium uppercase tracking-wide text-cyan-300">
+      <div className="border-b border-gray-200 pb-6">
+        <p className="text-sm font-medium uppercase tracking-wide text-gray-600">
           Relatórios
         </p>
         <h2 className="mt-2 text-3xl font-semibold">Consultar dados</h2>
-        <p className="mt-2 max-w-2xl text-sm leading-6 text-zinc-400">
+        <p className="mt-2 max-w-2xl text-sm leading-6 text-gray-600">
           Selecione um relatório disponível para o perfil autenticado.
         </p>
       </div>
@@ -121,17 +121,17 @@ export function ReportsPage() {
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
         {reports.map((report) => (
           <Link
-            className="min-h-36 rounded-lg border border-zinc-800 bg-zinc-900 p-5 text-left transition hover:border-cyan-300/70 hover:bg-zinc-800"
+            className="min-h-36 rounded-lg border border-gray-300 bg-gray-50 p-5 text-left text-black transition hover:border-black hover:bg-white"
             key={report.to}
             to={report.to}
           >
-            <span className="grid h-10 w-10 place-items-center rounded-md bg-zinc-950 text-cyan-300">
+            <span className="grid h-10 w-10 place-items-center rounded-md border border-gray-300 bg-white text-black">
               <report.icon className="h-5 w-5" />
             </span>
             <span className="mt-4 block text-lg font-semibold">
               {report.title}
             </span>
-            <span className="mt-2 block text-sm leading-6 text-zinc-400">
+            <span className="mt-2 block text-sm leading-6">
               {report.description}
             </span>
           </Link>
@@ -139,8 +139,8 @@ export function ReportsPage() {
       </div>
 
       {reports.length === 0 ? (
-        <div className="rounded-lg border border-zinc-800 bg-zinc-900 px-4 py-8 text-center text-sm text-zinc-400">
-          <FileSearch className="mx-auto mb-3 h-8 w-8 text-zinc-600" />
+        <div className="rounded-lg border border-gray-300 bg-gray-50 px-4 py-8 text-center text-sm text-gray-600">
+          <FileSearch className="mx-auto mb-3 h-8 w-8 text-gray-600" />
           Nenhum relatório disponível para este perfil.
         </div>
       ) : null}

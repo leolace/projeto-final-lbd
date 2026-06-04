@@ -70,7 +70,7 @@ export async function getDashboard() {
 
 export type ReportPaginationParams = {
   page: number;
-  pageSize: number;
+  pageSize: number | "all";
 };
 
 export async function getReportRows(

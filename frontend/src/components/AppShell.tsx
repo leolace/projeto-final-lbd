@@ -12,11 +12,11 @@ export function AppShell() {
   };
 
   return (
-    <main className="flex flex-col min-h-screen text-zinc-100">
-      <header className="border-b border-zinc-800 bg-zinc-950/95">
+    <main className="flex min-h-screen flex-col bg-white text-black">
+      <header className="border-b border-gray-200 bg-gray-50">
         <div className="mx-auto flex w-full max-w-6xl flex-col gap-4 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <p className="text-sm font-medium uppercase tracking-wide text-cyan-300">
+            <p className="text-sm font-medium uppercase tracking-wide text-gray-600">
               Projeto Final
             </p>
             <h1 className="mt-1 text-2xl font-semibold">Formula Data</h1>
@@ -28,13 +28,13 @@ export function AppShell() {
               <NavButton icon={BarChart3} label="Relatórios" to="/reports" />
             </nav>
 
-            <div className="flex items-center gap-3 border-t border-zinc-800 pt-3 sm:border-l sm:border-t-0 sm:pl-3 sm:pt-0">
+            <div className="flex items-center gap-3 border-t border-gray-200 pt-3 sm:border-l sm:border-t-0 sm:pl-3 sm:pt-0">
               <div className="flex min-w-0 items-center gap-2 text-sm">
-                <UserCircle className="h-5 w-5 shrink-0 text-zinc-500" />
-                <span className="truncate text-zinc-300">{user?.name}</span>
+                <UserCircle className="h-5 w-5 shrink-0 text-gray-600" />
+                <span className="truncate text-black">{user?.name}</span>
               </div>
               <button
-                className="inline-flex h-10 items-center gap-2 rounded-md bg-zinc-900 px-3 text-sm font-medium text-zinc-200 transition hover:bg-zinc-800"
+                className="inline-flex h-10 items-center gap-2 rounded-md border border-gray-300 bg-white px-3 text-sm font-medium text-black transition hover:border-black hover:bg-gray-100"
                 onClick={handleLogout}
                 type="button"
               >
@@ -65,8 +65,8 @@ function NavButton({ icon: Icon, label, to }: NavButtonProps) {
       className={({ isActive }) =>
         `inline-flex h-10 items-center gap-2 rounded-md px-3 text-sm font-medium transition ${
           isActive
-            ? "bg-cyan-300 text-zinc-950"
-            : "bg-zinc-900 text-zinc-300 hover:bg-zinc-800"
+            ? "border border-black bg-gray-100 text-black"
+            : "border border-gray-300 bg-white text-black hover:border-black hover:bg-gray-100"
         }`
       }
       to={to}

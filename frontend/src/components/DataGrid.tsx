@@ -1,22 +1,29 @@
 import {
   flexRender,
+  getSortedRowModel,
   getCoreRowModel,
   useReactTable,
+  type SortingFn,
+  type SortingState,
   type ColumnDef
 } from "@tanstack/react-table";
-import { ChevronLeft, ChevronRight } from "lucide-react";
-import { useMemo, type ReactNode } from "react";
+import dayjs from "dayjs";
+import { ArrowDown, ArrowUp, ChevronsUpDown, ChevronLeft, ChevronRight } from "lucide-react";
+import { useMemo, useState, type ReactNode } from "react";
 
 type RowData = Record<string, unknown>;
+type DataGridPageSize = number | "all";
 
 export type DataGridColumn<TRow extends RowData = RowData> = {
   key: Extract<keyof TRow, string> | string;
   header?: ReactNode;
   cell?: (value: unknown, row: TRow) => ReactNode;
+  format?: "date" | "datetime" | "number" | "text";
   align?: "left" | "center" | "right";
   className?: string;
   headerClassName?: string;
   hidden?: boolean;
+  enableSorting?: boolean;
 };
 
 type DataGridProps<TRow extends RowData = RowData> = {
@@ -25,12 +32,12 @@ type DataGridProps<TRow extends RowData = RowData> = {
   includeUnconfiguredColumns?: boolean;
   pagination?: {
     page: number;
-    pageSize: number;
+    pageSize: DataGridPageSize;
     total: number;
     totalPages: number;
-    pageSizeOptions: number[];
+    pageSizeOptions: DataGridPageSize[];
     onPageChange: (page: number) => void;
-    onPageSizeChange: (pageSize: number) => void;
+    onPageSizeChange: (pageSize: DataGridPageSize) => void;
   };
 };
 
@@ -56,7 +63,81 @@ function formatCellValue(value: unknown) {
     return value ? "Sim" : "Não";
   }
 
+  if (typeof value === "string" && isDateLike(value)) {
+    return formatDate(value);
+  }
+
   return String(value);
+}
+
+function isDateLike(value: string) {
+  return /^\d{4}-\d{2}-\d{2}(?:T|\s|$)/.test(value) && dayjs(value).isValid();
+}
+
+function formatDate(value: string, format: "date" | "datetime" = "date") {
+  const date = dayjs(value);
+
+  if (!date.isValid()) {
+    return value;
+  }
+
+  return date.format(format === "datetime" ? "DD/MM/YYYY HH:mm" : "DD/MM/YYYY");
+}
+
+function formatByColumn<TRow extends RowData>(
+  value: unknown,
+  column: DataGridColumn<TRow>
+) {
+  if (column.format === "date" || column.format === "datetime") {
+    return typeof value === "string" ? formatDate(value, column.format) : "-";
+  }
+
+  if (column.format === "number") {
+    return typeof value === "number"
+      ? new Intl.NumberFormat("pt-BR", {
+          maximumFractionDigits: 2
+        }).format(value)
+      : formatCellValue(value);
+  }
+
+  return formatCellValue(value);
+}
+
+function createDataGridSortingFn<TRow extends RowData>(): SortingFn<TRow> {
+  return (rowA, rowB, columnId) => {
+    const a = rowA.original[columnId];
+    const b = rowB.original[columnId];
+
+    if (a === b) {
+      return 0;
+    }
+
+    if (a === null || a === undefined || a === "") {
+      return -1;
+    }
+
+    if (b === null || b === undefined || b === "") {
+      return 1;
+    }
+
+    if (typeof a === "number" && typeof b === "number") {
+      return a - b;
+    }
+
+    if (
+      typeof a === "string" &&
+      typeof b === "string" &&
+      isDateLike(a) &&
+      isDateLike(b)
+    ) {
+      return dayjs(a).valueOf() - dayjs(b).valueOf();
+    }
+
+    return String(a).localeCompare(String(b), "pt-BR", {
+      numeric: true,
+      sensitivity: "base"
+    });
+  };
 }
 
 function getAlignClass(align: DataGridColumn["align"]) {
@@ -78,16 +159,30 @@ function createColumnDef<TRow extends RowData>(
 
   return {
     accessorKey: column.key,
-    header: () => (
-      <span className={`${alignClass} block ${column.headerClassName ?? ""}`}>
-        {column.header ?? formatHeader(column.key)}
-      </span>
-    ),
+    enableSorting: column.enableSorting ?? true,
+    sortingFn: createDataGridSortingFn<TRow>(),
+    header: ({ column: tableColumn }) => {
+      const sorted = tableColumn.getIsSorted();
+      const SortIcon =
+        sorted === "asc" ? ArrowUp : sorted === "desc" ? ArrowDown : ChevronsUpDown;
+
+      return (
+        <button
+          className={`${alignClass} flex w-full items-center gap-2 ${column.align === "right" ? "justify-end" : column.align === "center" ? "justify-center" : "justify-start"} ${column.headerClassName ?? ""}`}
+          disabled={!tableColumn.getCanSort()}
+          onClick={tableColumn.getToggleSortingHandler()}
+          type="button"
+        >
+          <span>{column.header ?? formatHeader(column.key)}</span>
+          {tableColumn.getCanSort() ? <SortIcon className="h-3.5 w-3.5" /> : null}
+        </button>
+      );
+    },
     cell: ({ getValue, row }) => (
       <span className={`${alignClass} block ${column.className ?? ""}`}>
         {column.cell
           ? column.cell(getValue(), row.original)
-          : formatCellValue(getValue())}
+          : formatByColumn(getValue(), column)}
       </span>
     )
   };
@@ -99,6 +194,7 @@ export function DataGrid<TRow extends RowData = RowData>({
   includeUnconfiguredColumns = true,
   pagination
 }: DataGridProps<TRow>) {
+  const [sorting, setSorting] = useState<SortingState>([]);
   const columns = useMemo<ColumnDef<TRow>[]>(() => {
     const keys = Array.from(new Set(rows.flatMap((row) => Object.keys(row))));
     const configuredKeys = new Set(
@@ -121,13 +217,18 @@ export function DataGrid<TRow extends RowData = RowData>({
   const table = useReactTable({
     data: rows,
     columns,
-    getCoreRowModel: getCoreRowModel()
+    state: {
+      sorting
+    },
+    onSortingChange: setSorting,
+    getCoreRowModel: getCoreRowModel(),
+    getSortedRowModel: getSortedRowModel()
   });
 
   if (rows.length === 0) {
     return (
       <div className="space-y-3">
-        <div className="rounded-lg border border-dashed border-zinc-700 px-4 py-10 text-center text-sm text-zinc-400">
+        <div className="rounded-lg border border-dashed border-gray-300 bg-gray-50 px-4 py-10 text-center text-sm text-gray-600">
           Nenhum registro encontrado.
         </div>
         {pagination ? <PaginationControls pagination={pagination} /> : null}
@@ -137,15 +238,15 @@ export function DataGrid<TRow extends RowData = RowData>({
 
   return (
     <div className="space-y-3">
-      <div className="overflow-hidden rounded-lg border border-zinc-800">
-        <div className="max-h-[520px] overflow-auto">
+      <div className="overflow-hidden rounded-lg border border-gray-300">
+        <div className="max-h-[800px] overflow-auto">
           <table className="min-w-full border-collapse text-left text-sm">
-            <thead className="sticky top-0 z-10 bg-zinc-900 text-xs uppercase tracking-wide text-zinc-400">
+            <thead className="sticky top-0 z-10 bg-gray-100 text-xs uppercase tracking-wide text-gray-600">
               {table.getHeaderGroups().map((headerGroup) => (
                 <tr key={headerGroup.id}>
                   {headerGroup.headers.map((header) => (
                     <th
-                      className="border-b border-zinc-800 px-4 py-3 font-semibold"
+                      className="border-b border-gray-300 px-4 py-3 font-semibold"
                       key={header.id}
                     >
                       {header.isPlaceholder
@@ -159,12 +260,12 @@ export function DataGrid<TRow extends RowData = RowData>({
                 </tr>
               ))}
             </thead>
-            <tbody className="divide-y divide-zinc-800 bg-zinc-950">
+            <tbody className="divide-y divide-gray-200 bg-white">
               {table.getRowModel().rows.map((row) => (
-                <tr className="hover:bg-zinc-900" key={row.id}>
+                <tr className="hover:bg-gray-50" key={row.id}>
                   {row.getVisibleCells().map((cell) => (
                     <td
-                      className="whitespace-nowrap px-4 py-3 text-zinc-200"
+                      className="whitespace-nowrap px-4 py-3 text-black"
                       key={cell.id}
                     >
                       {flexRender(cell.column.columnDef.cell, cell.getContext())}
@@ -186,36 +287,43 @@ function PaginationControls({
 }: {
   pagination: NonNullable<DataGridProps["pagination"]>;
 }) {
-  const canGoPrevious = pagination.page > 1;
-  const canGoNext = pagination.page < pagination.totalPages;
+  const isAllRows = pagination.pageSize === "all";
+  const numericPageSize =
+    typeof pagination.pageSize === "number" ? pagination.pageSize : 0;
+  const canGoPrevious = !isAllRows && pagination.page > 1;
+  const canGoNext = !isAllRows && pagination.page < pagination.totalPages;
   const firstItem =
     pagination.total === 0
       ? 0
-      : (pagination.page - 1) * pagination.pageSize + 1;
-  const lastItem = Math.min(
-    pagination.page * pagination.pageSize,
-    pagination.total
-  );
+      : isAllRows
+      ? 1
+      : (pagination.page - 1) * numericPageSize + 1;
+  const lastItem = isAllRows
+    ? pagination.total
+    : Math.min(pagination.page * numericPageSize, pagination.total);
 
   return (
-    <div className="flex flex-col gap-3 rounded-lg border border-zinc-800 bg-zinc-900 px-4 py-3 text-sm text-zinc-300 sm:flex-row sm:items-center sm:justify-between">
+    <div className="flex flex-col gap-3 rounded-lg border border-gray-300 bg-gray-50 px-4 py-3 text-sm text-black sm:flex-row sm:items-center sm:justify-between">
       <p>
         {firstItem}-{lastItem} de {pagination.total} registros
       </p>
 
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-        <label className="flex items-center gap-2 text-zinc-400">
+        <label className="flex items-center gap-2 text-gray-600">
           Linhas
           <select
-            className="h-9 rounded-md border border-zinc-700 bg-zinc-950 px-2 text-zinc-100 outline-none focus:border-cyan-300"
-            onChange={(event) =>
-              pagination.onPageSizeChange(Number(event.target.value))
-            }
+            className="h-9 rounded-md border border-gray-300 bg-white px-2 text-black outline-none focus:border-black"
+            onChange={(event) => {
+              const value = event.target.value;
+              pagination.onPageSizeChange(
+                value === "all" ? "all" : Number(value)
+              );
+            }}
             value={pagination.pageSize}
           >
             {pagination.pageSizeOptions.map((pageSize) => (
               <option key={pageSize} value={pageSize}>
-                {pageSize}
+                {pageSize === "all" ? "Todos" : pageSize}
               </option>
             ))}
           </select>
@@ -223,7 +331,7 @@ function PaginationControls({
 
         <div className="flex items-center gap-2">
           <button
-            className="inline-flex h-9 items-center gap-2 rounded-md bg-zinc-950 px-3 text-zinc-200 transition hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-50"
+            className="inline-flex h-9 items-center gap-2 rounded-md border border-gray-300 bg-white px-3 text-black transition hover:border-black hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-50"
             disabled={!canGoPrevious}
             onClick={() => pagination.onPageChange(pagination.page - 1)}
             type="button"
@@ -231,11 +339,13 @@ function PaginationControls({
             <ChevronLeft className="h-4 w-4" />
             Anterior
           </button>
-          <span className="min-w-28 text-center text-zinc-400">
-            Página {pagination.page} de {pagination.totalPages}
+          <span className="min-w-28 text-center text-gray-600">
+            {isAllRows
+              ? "Todos os registros"
+              : `Página ${pagination.page} de ${pagination.totalPages}`}
           </span>
           <button
-            className="inline-flex h-9 items-center gap-2 rounded-md bg-zinc-950 px-3 text-zinc-200 transition hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-50"
+            className="inline-flex h-9 items-center gap-2 rounded-md border border-gray-300 bg-white px-3 text-black transition hover:border-black hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-50"
             disabled={!canGoNext}
             onClick={() => pagination.onPageChange(pagination.page + 1)}
             type="button"

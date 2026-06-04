@@ -22,7 +22,7 @@ export type ReportRowsResponse = {
   rows: Array<Record<string, unknown>>;
   pagination: {
     page: number;
-    pageSize: number;
+    pageSize: number | "all";
     total: number;
     totalPages: number;
   };

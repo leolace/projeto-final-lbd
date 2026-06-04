@@ -1,6 +1,8 @@
 import { useSearchParams } from "react-router-dom";
 
-export const pageSizeOptions = [10, 20, 50];
+export type ReportPageSize = number | "all";
+
+export const pageSizeOptions: ReportPageSize[] = [10, 20, 50, "all"];
 export const defaultPage = 1;
 export const defaultPageSize = 20;
 
@@ -16,23 +18,32 @@ function parsePositiveInteger(value: string | null) {
 
 export function useReportPagination() {
   const [searchParams, setSearchParams] = useSearchParams();
-  const page = parsePositiveInteger(searchParams.get("page")) ?? defaultPage;
+  const requestedPageSizeParam = searchParams.get("pageSize");
+  const isAllRows = requestedPageSizeParam === "all";
+  const page = isAllRows
+    ? defaultPage
+    : parsePositiveInteger(searchParams.get("page")) ?? defaultPage;
   const requestedPageSize =
-    parsePositiveInteger(searchParams.get("pageSize")) ?? defaultPageSize;
-  const pageSize = pageSizeOptions.includes(requestedPageSize)
+    parsePositiveInteger(requestedPageSizeParam) ?? defaultPageSize;
+  const pageSize: ReportPageSize = isAllRows
+    ? "all"
+    : pageSizeOptions.includes(requestedPageSize)
     ? requestedPageSize
     : defaultPageSize;
 
   const setPage = (nextPage: number) => {
     setSearchParams((current) => {
       const next = new URLSearchParams(current);
-      next.set("page", String(Math.max(defaultPage, nextPage)));
+      next.set(
+        "page",
+        String(pageSize === "all" ? defaultPage : Math.max(defaultPage, nextPage))
+      );
       next.set("pageSize", String(pageSize));
       return next;
     });
   };
 
-  const setPageSize = (nextPageSize: number) => {
+  const setPageSize = (nextPageSize: ReportPageSize) => {
     const validPageSize = pageSizeOptions.includes(nextPageSize)
       ? nextPageSize
       : defaultPageSize;
