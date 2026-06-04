@@ -11,9 +11,10 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      - ./backend/init.sql:/docker-entrypoint-initdb.d/01-init.sql:ro
-      - ./backend/carga.sql:/workspace/carga.sql:ro
-      - ./backend/csvs:/workspace/csvs:ro
+      - ./database/init.sql:/workspace/init.sql:ro
+      - ./database/carga.sql:/workspace/carga.sql:ro
+      - ./database/limpar-carga.sql:/workspace/limpar-carga.sql:ro
+      - ./database/csvs:/workspace/csvs:ro
     healthcheck:
       test:
         [

@@ -58,6 +58,8 @@ BEGIN;
 
 COMMIT;
 
+BEGIN;
+
 -- =========================================================
 -- AJUSTE DAS SEQUENCES DAS COLUNAS IDENTITY
 -- =========================================================
@@ -89,7 +91,7 @@ SELECT setval(pg_get_serial_sequence('standings', 'id'), COALESCE((SELECT MAX(id
 
 -- 1. Adicionando coluna nationality em countries
 ALTER TABLE countries
-ADD COLUMN nationality VARCHAR(255);
+ADD COLUMN IF NOT EXISTS nationality VARCHAR(255);
 
 -- 2. Preencheendo countries.nationality a partir dos gentílicos
 UPDATE countries SET nationality = 'American'       WHERE name = 'United States';
@@ -141,10 +143,10 @@ WHERE name = 'Hong Kong';
 
 -- 4. Adicionando colunas de referência para countries
 ALTER TABLE drivers
-ADD COLUMN country_id INTEGER;
+ADD COLUMN IF NOT EXISTS country_id INTEGER;
 
 ALTER TABLE constructors
-ADD COLUMN country_id INTEGER;
+ADD COLUMN IF NOT EXISTS country_id INTEGER;
 
 -- 5. Preenchendo referências para countries
 UPDATE drivers d
@@ -171,13 +173,31 @@ WHERE ct.nationality = c.nationality
   AND ct.country_id IS NULL;
 
 -- 7. Para garantir integridade referencial
-ALTER TABLE drivers
-ADD CONSTRAINT fk_drivers_country
-FOREIGN KEY (country_id) REFERENCES countries(id);
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1
+        FROM pg_constraint
+        WHERE conname = 'fk_drivers_country'
+    ) THEN
+        ALTER TABLE drivers
+        ADD CONSTRAINT fk_drivers_country
+        FOREIGN KEY (country_id) REFERENCES countries(id);
+    END IF;
+END $$;
 
-ALTER TABLE constructors
-ADD CONSTRAINT fk_constructors_country
-FOREIGN KEY (country_id) REFERENCES countries(id);
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1
+        FROM pg_constraint
+        WHERE conname = 'fk_constructors_country'
+    ) THEN
+        ALTER TABLE constructors
+        ADD CONSTRAINT fk_constructors_country
+        FOREIGN KEY (country_id) REFERENCES countries(id);
+    END IF;
+END $$;
 
 
 -- Parte 2: Deduplicação da tabela cities
@@ -213,5 +233,4 @@ USING city_merge_map m
 WHERE c.id = m.old_id
   AND m.old_id <> m.new_id;
 
-
-
+COMMIT;
