@@ -99,3 +99,28 @@ export type ReportRowsResponse = {
     totalPages: number;
   };
 };
+
+export type ActionCountry = {
+  id: number;
+  name: string;
+  nationality: string;
+};
+
+export type ActionCountriesResponse = {
+  countries: ActionCountry[];
+};
+
+export type CreateConstructorActionInput = {
+  constructor_ref: string;
+  name: string;
+  country_id: number;
+  wikipedia_url: string;
+};
+
+export type CreateDriverActionInput = {
+  driver_ref: string;
+  given_name: string;
+  family_name: string;
+  date_of_birth: string;
+  country_id: number;
+};

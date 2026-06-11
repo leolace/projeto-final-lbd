@@ -1,6 +1,9 @@
 import axios, { AxiosError } from "axios";
 import type {
+  ActionCountriesResponse,
   AuthUser,
+  CreateConstructorActionInput,
+  CreateDriverActionInput,
   DashboardResponse,
   ReportRowsResponse,
   SeasonsResponse
@@ -77,6 +80,26 @@ export async function getDashboard(params?: { season?: number }) {
 
 export async function getSeasons() {
   const response = await api.get<SeasonsResponse>("/seasons");
+
+  return response.data;
+}
+
+export async function getActionCountries() {
+  const response = await api.get<ActionCountriesResponse>("/actions/countries");
+
+  return response.data;
+}
+
+export async function createConstructorAction(
+  input: CreateConstructorActionInput
+) {
+  const response = await api.post("/actions/admin/constructors", input);
+
+  return response.data;
+}
+
+export async function createDriverAction(input: CreateDriverActionInput) {
+  const response = await api.post("/actions/admin/drivers", input);
 
   return response.data;
 }

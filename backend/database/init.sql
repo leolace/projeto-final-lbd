@@ -23,6 +23,7 @@ CREATE TABLE IF NOT EXISTS countries (
     name TEXT UNIQUE NOT NULL,
     wikipedia_link TEXT NOT NULL UNIQUE,
     keywords TEXT,
+    nationality VARCHAR(255),
     continent_id INTEGER,
 
     CONSTRAINT fk_countries_continent
@@ -176,7 +177,7 @@ CREATE TABLE IF NOT EXISTS constructors (
     id INTEGER PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
     constructor_ref VARCHAR(20) NOT NULL UNIQUE,
     name VARCHAR(25) NOT NULL,
-    nationality VARCHAR(13) NOT NULL,
+    nationality VARCHAR(255) NOT NULL,
     country_id INTEGER,
     wikipedia_url TEXT,
 
@@ -192,9 +193,44 @@ CREATE TABLE IF NOT EXISTS drivers (
     driver_ref VARCHAR(18) NOT NULL UNIQUE,
     given_name VARCHAR(17) NOT NULL,
     family_name VARCHAR(23) NOT NULL,
-    nationality VARCHAR(15) NOT NULL,
-    date_of_birth DATE NOT NULL
+    nationality VARCHAR(255) NOT NULL,
+    date_of_birth DATE NOT NULL,
+    country_id INTEGER,
+
+    CONSTRAINT fk_drivers_country
+        FOREIGN KEY (country_id)
+        REFERENCES countries(id)
+        ON DELETE SET NULL
+        ON UPDATE CASCADE
 );
+
+ALTER TABLE countries
+ADD COLUMN IF NOT EXISTS nationality VARCHAR(255);
+
+ALTER TABLE constructors
+ALTER COLUMN nationality TYPE VARCHAR(255);
+
+ALTER TABLE drivers
+ADD COLUMN IF NOT EXISTS country_id INTEGER;
+
+ALTER TABLE drivers
+ALTER COLUMN nationality TYPE VARCHAR(255);
+
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1
+        FROM pg_constraint
+        WHERE conname = 'fk_drivers_country'
+    ) THEN
+        ALTER TABLE drivers
+        ADD CONSTRAINT fk_drivers_country
+        FOREIGN KEY (country_id)
+        REFERENCES countries(id)
+        ON DELETE SET NULL
+        ON UPDATE CASCADE;
+    END IF;
+END $$;
 
 CREATE TABLE IF NOT EXISTS races (
     id BIGINT PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
@@ -375,6 +411,7 @@ CREATE INDEX IF NOT EXISTS idx_airports_airport_type_id ON airports(airport_type
 
 CREATE INDEX IF NOT EXISTS idx_circuits_city_id ON circuits(city_id);
 CREATE INDEX IF NOT EXISTS idx_constructors_country_id ON constructors(country_id);
+CREATE INDEX IF NOT EXISTS idx_drivers_country_id ON drivers(country_id);
 
 CREATE INDEX IF NOT EXISTS idx_races_season_id ON races(season_id);
 CREATE INDEX IF NOT EXISTS idx_races_circuit_id ON races(circuit_id);
@@ -564,7 +601,22 @@ CREATE OR REPLACE FUNCTION sync_user_from_driver()
 RETURNS TRIGGER
 LANGUAGE plpgsql
 AS $$
+DECLARE
+    generated_login TEXT;
+    synced_user_id UUID;
 BEGIN
+    generated_login := NEW.driver_ref || '_d';
+
+    IF EXISTS (
+        SELECT 1
+        FROM users
+        WHERE login = generated_login
+          AND NOT (tipo = 'Piloto' AND idOriginal = NEW.driver_ref)
+    ) THEN
+        RAISE EXCEPTION 'Generated login already exists: %', generated_login
+            USING ERRCODE = 'unique_violation';
+    END IF;
+
     INSERT INTO users (
         login,
         password,
@@ -574,7 +626,7 @@ BEGIN
         updatedAt
     )
     VALUES (
-        NEW.driver_ref || '_d',
+        generated_login,
         crypt(NEW.driver_ref, gen_salt('bf')),
         'Piloto',
         NEW.driver_ref,
@@ -585,7 +637,12 @@ BEGIN
     SET login = EXCLUDED.login,
         password = EXCLUDED.password,
         name = EXCLUDED.name,
-        updatedAt = NOW();
+        updatedAt = NOW()
+    RETURNING userId INTO synced_user_id;
+
+    INSERT INTO users_piloto (userId)
+    VALUES (synced_user_id)
+    ON CONFLICT (userId) DO NOTHING;
 
     RETURN NEW;
 END;
@@ -595,7 +652,22 @@ CREATE OR REPLACE FUNCTION sync_user_from_constructor()
 RETURNS TRIGGER
 LANGUAGE plpgsql
 AS $$
+DECLARE
+    generated_login TEXT;
+    synced_user_id UUID;
 BEGIN
+    generated_login := NEW.constructor_ref || '_c';
+
+    IF EXISTS (
+        SELECT 1
+        FROM users
+        WHERE login = generated_login
+          AND NOT (tipo = 'Escuderia' AND idOriginal = NEW.constructor_ref)
+    ) THEN
+        RAISE EXCEPTION 'Generated login already exists: %', generated_login
+            USING ERRCODE = 'unique_violation';
+    END IF;
+
     INSERT INTO users (
         login,
         password,
@@ -605,7 +677,7 @@ BEGIN
         updatedAt
     )
     VALUES (
-        NEW.constructor_ref || '_c',
+        generated_login,
         crypt(NEW.constructor_ref, gen_salt('bf')),
         'Escuderia',
         NEW.constructor_ref,
@@ -616,16 +688,25 @@ BEGIN
     SET login = EXCLUDED.login,
         password = EXCLUDED.password,
         name = EXCLUDED.name,
-        updatedAt = NOW();
+        updatedAt = NOW()
+    RETURNING userId INTO synced_user_id;
+
+    INSERT INTO users_escuderia (userId)
+    VALUES (synced_user_id)
+    ON CONFLICT (userId) DO NOTHING;
 
     RETURN NEW;
 END;
 $$;
 
+DROP TRIGGER IF EXISTS trg_sync_user_from_driver ON drivers;
+
 CREATE TRIGGER trg_sync_user_from_driver
 AFTER INSERT OR UPDATE ON drivers
 FOR EACH ROW
 EXECUTE FUNCTION sync_user_from_driver();
+
+DROP TRIGGER IF EXISTS trg_sync_user_from_constructor ON constructors;
 
 CREATE TRIGGER trg_sync_user_from_constructor
 AFTER INSERT OR UPDATE ON constructors

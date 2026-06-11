@@ -2,6 +2,7 @@ import cors from "cors";
 import express from "express";
 import { pingDatabase } from "./db/service.js";
 import { errorHandler } from "./middleware/error-handler.js";
+import { actionsRouter } from "./routes/actions-router.js";
 import { authRouter } from "./routes/auth-router.js";
 import { dashboardRouter } from "./routes/dashboard-router.js";
 import { reportsRouter } from "./routes/reports-router.js";
@@ -30,6 +31,7 @@ app.get("/db/ping", async (_request, response, next) => {
 });
 
 app.use("/auth", authRouter);
+app.use("/actions", actionsRouter);
 app.use("/dashboard", dashboardRouter);
 app.use("/reports", reportsRouter);
 app.use("/seasons", seasonsRouter);

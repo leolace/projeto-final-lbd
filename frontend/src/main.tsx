@@ -6,6 +6,7 @@ import { App } from "./App";
 import { AuthProvider } from "./auth";
 import { AppShell } from "./components/AppShell";
 import { ProtectedRoute } from "./components/ProtectedRoute";
+import { ActionsPage } from "./pages/actions";
 import { DashboardPage } from "./pages/dashboards";
 import { HomeRedirect } from "./pages/HomeRedirect";
 import { LoginPage } from "./pages/LoginPage";
@@ -49,6 +50,10 @@ const router = createBrowserRouter([
               {
                 path: "reports",
                 element: <ReportsPage />
+              },
+              {
+                path: "actions",
+                element: <ActionsPage />
               },
               {
                 path: "reports/admin/overview",
