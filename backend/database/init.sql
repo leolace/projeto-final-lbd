@@ -390,6 +390,39 @@ CREATE INDEX IF NOT EXISTS idx_results_status_id ON results(status_id);
 
 CREATE INDEX IF NOT EXISTS idx_standings_season_id ON standings(season_id);
 
+-- =========================================================
+-- FUNÇÕES DE DASHBOARD
+-- =========================================================
+
+CREATE OR REPLACE FUNCTION get_constructor_dashboard_stats(
+    p_constructor_ref TEXT
+)
+RETURNS TABLE (
+    constructor_id INTEGER,
+    constructor_name VARCHAR(25),
+    wins_count INTEGER,
+    associated_drivers_count INTEGER,
+    first_results_year INTEGER,
+    last_results_year INTEGER
+)
+LANGUAGE sql
+STABLE
+AS $$
+    SELECT
+        c.id AS constructor_id,
+        c.name AS constructor_name,
+        COUNT(*) FILTER (WHERE r.position_order = 1)::INTEGER AS wins_count,
+        COUNT(DISTINCT r.driver_id)::INTEGER AS associated_drivers_count,
+        MIN(s.year)::INTEGER AS first_results_year,
+        MAX(s.year)::INTEGER AS last_results_year
+    FROM constructors c
+    LEFT JOIN results r ON r.constructor_id = c.id
+    LEFT JOIN races ra ON ra.id = r.race_id
+    LEFT JOIN seasons s ON s.id = ra.season_id
+    WHERE c.constructor_ref = p_constructor_ref
+    GROUP BY c.id, c.name;
+$$;
+
 COMMIT;
 
 BEGIN;

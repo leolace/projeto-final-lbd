@@ -55,7 +55,10 @@ export type AdminDashboardSummary = {
 export type ConstructorDashboardSummary = {
   constructorId: number | null;
   constructorName: string;
+  winsCount: number;
   associatedDriversCount: number;
+  firstResultsYear: number | null;
+  lastResultsYear: number | null;
 };
 
 export type DriverDashboardSummary = {

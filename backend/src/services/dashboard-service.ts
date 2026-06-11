@@ -187,17 +187,20 @@ async function getConstructorDashboard(user: AuthUser) {
   const result = await query<{
     constructor_id: number;
     constructor_name: string;
-    associated_drivers_count: string;
+    wins_count: number | string;
+    associated_drivers_count: number | string;
+    first_results_year: number | string | null;
+    last_results_year: number | string | null;
   }>(
     `
       select
-        c.id as constructor_id,
-        c.name as constructor_name,
-        count(distinct r.driver_id)::text as associated_drivers_count
-      from constructors c
-      left join results r on r.constructor_id = c.id
-      where c.constructor_ref = $1
-      group by c.id, c.name
+        constructor_id,
+        constructor_name,
+        wins_count,
+        associated_drivers_count,
+        first_results_year,
+        last_results_year
+      from get_constructor_dashboard_stats($1)
       limit 1
     `,
     [user.idOriginal]
@@ -211,7 +214,16 @@ async function getConstructorDashboard(user: AuthUser) {
     summary: {
       constructorId: row?.constructor_id ?? null,
       constructorName: row?.constructor_name ?? user.name,
-      associatedDriversCount: Number(row?.associated_drivers_count ?? 0)
+      winsCount: Number(row?.wins_count ?? 0),
+      associatedDriversCount: Number(row?.associated_drivers_count ?? 0),
+      firstResultsYear:
+        row?.first_results_year === null || row?.first_results_year === undefined
+          ? null
+          : Number(row.first_results_year),
+      lastResultsYear:
+        row?.last_results_year === null || row?.last_results_year === undefined
+          ? null
+          : Number(row.last_results_year)
     }
   };
 }

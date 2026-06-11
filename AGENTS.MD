@@ -29,7 +29,7 @@ A pasta `client` é uma aplicação React Native gerenciada pelo Expo.
 - **Framework:** React + Vite + TypeScript.
 - **Estilização:** TailwindCss. NUNCA utilize estilos inline ou arquivos .css.
 - **Roteamento:** React Router.
-- **Requisições:** `@tanstack/react-query` para gerenciamento de cache/estado do servidor e `ky` como cliente HTTP.
+- **Requisições:** `@tanstack/react-query` para gerenciamento de cache/estado do servidor e `axios` como cliente HTTP.
 - **Estado Global:** `zustand` (apenas para estados globais complexos), `Context API` (para estados globais simples) e Zustand não deve substituir o React Query para dados do servidor.
 - **Formulários:** `@tanstack/react-form` integrado com `zod` e `@tanstack/zod-form-adapter`.
 
