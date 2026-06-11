@@ -5,6 +5,7 @@ import { errorHandler } from "./middleware/error-handler.js";
 import { authRouter } from "./routes/auth-router.js";
 import { dashboardRouter } from "./routes/dashboard-router.js";
 import { reportsRouter } from "./routes/reports-router.js";
+import { seasonsRouter } from "./routes/seasons-router.js";
 
 export const app = express();
 
@@ -31,5 +32,6 @@ app.get("/db/ping", async (_request, response, next) => {
 app.use("/auth", authRouter);
 app.use("/dashboard", dashboardRouter);
 app.use("/reports", reportsRouter);
+app.use("/seasons", seasonsRouter);
 
 app.use(errorHandler);

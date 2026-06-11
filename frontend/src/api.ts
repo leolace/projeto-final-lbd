@@ -1,5 +1,10 @@
 import axios, { AxiosError } from "axios";
-import type { AuthUser, DashboardResponse, ReportRowsResponse } from "./types";
+import type {
+  AuthUser,
+  DashboardResponse,
+  ReportRowsResponse,
+  SeasonsResponse
+} from "./types";
 
 const tokenStorageKey = "projeto-final:token";
 
@@ -62,8 +67,16 @@ export async function getCurrentUser() {
   return response.data.user;
 }
 
-export async function getDashboard() {
-  const response = await api.get<DashboardResponse>("/dashboard");
+export async function getDashboard(params?: { season?: number }) {
+  const response = await api.get<DashboardResponse>("/dashboard", {
+    params
+  });
+
+  return response.data;
+}
+
+export async function getSeasons() {
+  const response = await api.get<SeasonsResponse>("/seasons");
 
   return response.data;
 }

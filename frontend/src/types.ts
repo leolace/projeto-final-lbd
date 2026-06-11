@@ -12,11 +12,68 @@ export type AuthUser = {
   name: string;
 };
 
-export type DashboardResponse = {
-  user: AuthUser;
-  roleLabel: string;
-  summary: Record<string, unknown>;
+export type Season = {
+  id: number;
+  year: number;
 };
+
+export type SeasonsResponse = {
+  seasons: Season[];
+};
+
+export type AdminDashboardRace = {
+  id: number;
+  raceName: string;
+  circuitName: string;
+  raceDate: string;
+  raceTime: string | null;
+  lapsCount: number;
+};
+
+export type AdminDashboardConstructor = {
+  id: number;
+  constructorName: string;
+  totalPoints: number;
+};
+
+export type AdminDashboardDriver = {
+  id: number;
+  driverName: string;
+  totalPoints: number;
+};
+
+export type AdminDashboardSummary = {
+  driversCount: number;
+  constructorsCount: number;
+  seasonsCount: number;
+  selectedSeason: Season | null;
+  latestSeasonRaces: AdminDashboardRace[];
+  latestSeasonConstructors: AdminDashboardConstructor[];
+  latestSeasonDrivers: AdminDashboardDriver[];
+};
+
+export type ConstructorDashboardSummary = {
+  constructorId: number | null;
+  constructorName: string;
+  associatedDriversCount: number;
+};
+
+export type DriverDashboardSummary = {
+  driverId: number | null;
+  driverName: string;
+  constructorName: string | null;
+};
+
+type DashboardBase<TUserType extends UserType, TSummary> = {
+  user: AuthUser & { tipo: TUserType };
+  roleLabel: TUserType;
+  summary: TSummary;
+};
+
+export type DashboardResponse =
+  | DashboardBase<UserType.Admin, AdminDashboardSummary>
+  | DashboardBase<UserType.Escuderia, ConstructorDashboardSummary>
+  | DashboardBase<UserType.Piloto, DriverDashboardSummary>;
 
 export type ReportRowsResponse = {
   rows: Array<Record<string, unknown>>;
