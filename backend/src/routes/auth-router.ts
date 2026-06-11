@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { getAuthenticatedUser, requireAuth } from "../middleware/require-auth.js";
-import { login } from "../services/auth-service.js";
+import { login, logout } from "../services/auth-service.js";
 
 export const authRouter = Router();
 
@@ -31,4 +31,16 @@ authRouter.get("/me", requireAuth, (request, response) => {
   response.json({
     user: getAuthenticatedUser(request)
   });
+});
+
+authRouter.post("/logout", requireAuth, async (request, response, next) => {
+  try {
+    const user = getAuthenticatedUser(request);
+
+    await logout(user.userId);
+
+    response.status(204).send();
+  } catch (error) {
+    next(error);
+  }
 });

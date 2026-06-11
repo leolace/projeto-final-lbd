@@ -455,6 +455,78 @@ CREATE TABLE IF NOT EXISTS users_escuderia (
     FOREIGN KEY (userId) REFERENCES users(userId) ON DELETE CASCADE
 );
 
+CREATE OR REPLACE FUNCTION sync_user_from_driver()
+RETURNS TRIGGER
+LANGUAGE plpgsql
+AS $$
+BEGIN
+    INSERT INTO users (
+        login,
+        password,
+        tipo,
+        idOriginal,
+        name,
+        updatedAt
+    )
+    VALUES (
+        NEW.driver_ref || '_d',
+        crypt(NEW.driver_ref, gen_salt('bf')),
+        'Piloto',
+        NEW.driver_ref,
+        CONCAT_WS(' ', NEW.given_name, NEW.family_name),
+        NOW()
+    )
+    ON CONFLICT (tipo, idOriginal) DO UPDATE
+    SET login = EXCLUDED.login,
+        password = EXCLUDED.password,
+        name = EXCLUDED.name,
+        updatedAt = NOW();
+
+    RETURN NEW;
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION sync_user_from_constructor()
+RETURNS TRIGGER
+LANGUAGE plpgsql
+AS $$
+BEGIN
+    INSERT INTO users (
+        login,
+        password,
+        tipo,
+        idOriginal,
+        name,
+        updatedAt
+    )
+    VALUES (
+        NEW.constructor_ref || '_c',
+        crypt(NEW.constructor_ref, gen_salt('bf')),
+        'Escuderia',
+        NEW.constructor_ref,
+        NEW.name,
+        NOW()
+    )
+    ON CONFLICT (tipo, idOriginal) DO UPDATE
+    SET login = EXCLUDED.login,
+        password = EXCLUDED.password,
+        name = EXCLUDED.name,
+        updatedAt = NOW();
+
+    RETURN NEW;
+END;
+$$;
+
+CREATE TRIGGER trg_sync_user_from_driver
+AFTER INSERT OR UPDATE ON drivers
+FOR EACH ROW
+EXECUTE FUNCTION sync_user_from_driver();
+
+CREATE TRIGGER trg_sync_user_from_constructor
+AFTER INSERT OR UPDATE ON constructors
+FOR EACH ROW
+EXECUTE FUNCTION sync_user_from_constructor();
+
 CREATE TABLE IF NOT EXISTS users_log (
     id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     userId UUID NOT NULL,
