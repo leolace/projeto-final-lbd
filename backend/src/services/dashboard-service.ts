@@ -229,33 +229,49 @@ async function getConstructorDashboard(user: AuthUser) {
 }
 
 async function getDriverDashboard(user: AuthUser) {
-  const result = await query<{
-    driver_id: number;
-    driver_name: string;
-    constructor_name: string | null;
-  }>(
-    `
-      select
-        d.id as driver_id,
-        d.given_name || ' ' || d.family_name as driver_name,
-        latest_constructor.name as constructor_name
-      from drivers d
-      left join lateral (
-        select c.name
-        from results r
-        join races ra on ra.id = r.race_id
-        join constructors c on c.id = r.constructor_id
-        where r.driver_id = d.id
-        order by ra.race_date desc, ra.round desc
+  const [summaryResult, yearCircuitStatsResult] = await Promise.all([
+    query<{
+      driver_id: number;
+      driver_name: string;
+      constructor_name: string | null;
+      first_results_year: number | string | null;
+      last_results_year: number | string | null;
+    }>(
+      `
+        select
+          driver_id,
+          driver_name,
+          constructor_name,
+          first_results_year,
+          last_results_year
+        from get_driver_dashboard_stats($1)
         limit 1
-      ) latest_constructor on true
-      where d.driver_ref = $1
-      limit 1
-    `,
-    [user.idOriginal]
-  );
+      `,
+      [user.idOriginal]
+    ),
+    query<{
+      season_year: number | string;
+      circuit_id: number;
+      circuit_name: string;
+      total_points: number | string;
+      wins_count: number | string;
+      races_count: number | string;
+    }>(
+      `
+        select
+          season_year,
+          circuit_id,
+          circuit_name,
+          total_points,
+          wins_count,
+          races_count
+        from get_driver_year_circuit_stats($1)
+      `,
+      [user.idOriginal]
+    )
+  ]);
 
-  const row = result.rows[0];
+  const row = summaryResult.rows[0];
 
   return {
     user,
@@ -263,7 +279,23 @@ async function getDriverDashboard(user: AuthUser) {
     summary: {
       driverId: row?.driver_id ?? null,
       driverName: row?.driver_name ?? user.name,
-      constructorName: row?.constructor_name
+      constructorName: row?.constructor_name,
+      firstResultsYear:
+        row?.first_results_year === null || row?.first_results_year === undefined
+          ? null
+          : Number(row.first_results_year),
+      lastResultsYear:
+        row?.last_results_year === null || row?.last_results_year === undefined
+          ? null
+          : Number(row.last_results_year),
+      yearCircuitStats: yearCircuitStatsResult.rows.map((stat) => ({
+        seasonYear: Number(stat.season_year),
+        circuitId: stat.circuit_id,
+        circuitName: stat.circuit_name,
+        totalPoints: Number(stat.total_points),
+        winsCount: Number(stat.wins_count),
+        racesCount: Number(stat.races_count)
+      }))
     }
   };
 }

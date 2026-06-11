@@ -61,10 +61,22 @@ export type ConstructorDashboardSummary = {
   lastResultsYear: number | null;
 };
 
+export type DriverDashboardYearCircuitStat = {
+  seasonYear: number;
+  circuitId: number;
+  circuitName: string;
+  totalPoints: number;
+  winsCount: number;
+  racesCount: number;
+};
+
 export type DriverDashboardSummary = {
   driverId: number | null;
   driverName: string;
   constructorName: string | null;
+  firstResultsYear: number | null;
+  lastResultsYear: number | null;
+  yearCircuitStats: DriverDashboardYearCircuitStat[];
 };
 
 type DashboardBase<TUserType extends UserType, TSummary> = {

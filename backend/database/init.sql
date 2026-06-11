@@ -423,6 +423,78 @@ AS $$
     GROUP BY c.id, c.name;
 $$;
 
+CREATE OR REPLACE FUNCTION get_driver_dashboard_stats(
+    p_driver_ref TEXT
+)
+RETURNS TABLE (
+    driver_id INTEGER,
+    driver_name TEXT,
+    constructor_name VARCHAR(25),
+    first_results_year INTEGER,
+    last_results_year INTEGER
+)
+LANGUAGE sql
+STABLE
+AS $$
+    SELECT
+        d.id AS driver_id,
+        d.given_name || ' ' || d.family_name AS driver_name,
+        latest_constructor.name AS constructor_name,
+        results_years.first_results_year,
+        results_years.last_results_year
+    FROM drivers d
+    LEFT JOIN LATERAL (
+        SELECT
+            MIN(s.year)::INTEGER AS first_results_year,
+            MAX(s.year)::INTEGER AS last_results_year
+        FROM results r
+        JOIN races ra ON ra.id = r.race_id
+        JOIN seasons s ON s.id = ra.season_id
+        WHERE r.driver_id = d.id
+    ) results_years ON TRUE
+    LEFT JOIN LATERAL (
+        SELECT c.name
+        FROM results r
+        JOIN races ra ON ra.id = r.race_id
+        JOIN constructors c ON c.id = r.constructor_id
+        WHERE r.driver_id = d.id
+        ORDER BY ra.race_date DESC, ra.round DESC
+        LIMIT 1
+    ) latest_constructor ON TRUE
+    WHERE d.driver_ref = p_driver_ref;
+$$;
+
+CREATE OR REPLACE FUNCTION get_driver_year_circuit_stats(
+    p_driver_ref TEXT
+)
+RETURNS TABLE (
+    season_year INTEGER,
+    circuit_id INTEGER,
+    circuit_name VARCHAR(44),
+    total_points DOUBLE PRECISION,
+    wins_count INTEGER,
+    races_count INTEGER
+)
+LANGUAGE sql
+STABLE
+AS $$
+    SELECT
+        s.year AS season_year,
+        ci.id AS circuit_id,
+        ci.name AS circuit_name,
+        COALESCE(SUM(r.points), 0)::DOUBLE PRECISION AS total_points,
+        COUNT(*) FILTER (WHERE r.position_order = 1)::INTEGER AS wins_count,
+        COUNT(DISTINCT r.race_id)::INTEGER AS races_count
+    FROM drivers d
+    JOIN results r ON r.driver_id = d.id
+    JOIN races ra ON ra.id = r.race_id
+    JOIN seasons s ON s.id = ra.season_id
+    JOIN circuits ci ON ci.id = ra.circuit_id
+    WHERE d.driver_ref = p_driver_ref
+    GROUP BY s.year, ci.id, ci.name
+    ORDER BY s.year DESC, ci.name ASC;
+$$;
+
 COMMIT;
 
 BEGIN;
