@@ -1,6 +1,13 @@
-import { BarChart3, ListChecks, LogOut, PanelLeft, UserCircle } from "lucide-react";
+import {
+  BarChart3,
+  ListChecks,
+  LogOut,
+  PanelLeft,
+  UserCircle,
+} from "lucide-react";
 import { NavLink, Outlet, useNavigate } from "react-router-dom";
 import { useAuth } from "../auth";
+import { UserType } from "../types";
 
 export function AppShell() {
   const navigate = useNavigate();
@@ -26,7 +33,9 @@ export function AppShell() {
             <nav className="flex gap-2">
               <NavButton icon={PanelLeft} label="Dashboard" to="/dashboard" />
               <NavButton icon={BarChart3} label="Relatórios" to="/reports" />
-              <NavButton icon={ListChecks} label="Ações" to="/actions" />
+              {user?.tipo !== UserType.Piloto && (
+                <NavButton icon={ListChecks} label="Ações" to="/actions" />
+              )}
             </nav>
 
             <div className="flex items-center gap-3 border-t border-gray-200 pt-3 sm:border-l sm:border-t-0 sm:pl-3 sm:pt-0">

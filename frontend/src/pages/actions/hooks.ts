@@ -2,7 +2,9 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   createConstructorAction,
   createDriverAction,
-  getActionCountries
+  getActionCountries,
+  importConstructorDriversAction,
+  searchConstructorDriversAction
 } from "../../api";
 
 export function useActionCountries() {
@@ -33,6 +35,26 @@ export function useCreateDriverAction() {
 
   return useMutation({
     mutationFn: createDriverAction,
+    onSuccess: async () => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["dashboard"] }),
+        queryClient.invalidateQueries({ queryKey: ["reports"] })
+      ]);
+    }
+  });
+}
+
+export function useSearchConstructorDriversAction() {
+  return useMutation({
+    mutationFn: searchConstructorDriversAction
+  });
+}
+
+export function useImportConstructorDriversAction() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: importConstructorDriversAction,
     onSuccess: async () => {
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ["dashboard"] }),

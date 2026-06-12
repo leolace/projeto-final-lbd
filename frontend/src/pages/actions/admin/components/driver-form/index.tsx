@@ -100,7 +100,7 @@ export function DriverForm() {
           value={form.given_name}
         />
       </FormField>
-      <FormField label="Nome da família">
+      <FormField label="Sobrenome">
         <FormInput
           maxLength={23}
           onValueChange={(value) =>

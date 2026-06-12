@@ -124,3 +124,29 @@ export type CreateDriverActionInput = {
   date_of_birth: string;
   country_id: number;
 };
+
+export type ConstructorDriverSearchResult = {
+  driverId: number;
+  fullName: string;
+  dateOfBirth: string;
+  countryName: string | null;
+  nationality: string;
+};
+
+export type ConstructorDriverSearchResponse = {
+  drivers: ConstructorDriverSearchResult[];
+};
+
+export type ImportConstructorDriversInput = {
+  content: string;
+  fileName: string;
+};
+
+export type ImportConstructorDriversResponse = {
+  insertedCount: number;
+  drivers: Array<{
+    driverId: number;
+    driverRef: string;
+    fullName: string;
+  }>;
+};

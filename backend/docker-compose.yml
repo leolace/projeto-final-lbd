@@ -14,6 +14,7 @@ services:
       - ./database/init.sql:/workspace/init.sql:ro
       - ./database/carga.sql:/workspace/carga.sql:ro
       - ./database/limpar-carga.sql:/workspace/limpar-carga.sql:ro
+      - ./database/limpar-estrutura.sql:/workspace/limpar-estrutura.sql:ro
       - ./database/csvs:/workspace/csvs:ro
     healthcheck:
       test:

@@ -23,7 +23,7 @@ CREATE TABLE IF NOT EXISTS countries (
     name TEXT UNIQUE NOT NULL,
     wikipedia_link TEXT NOT NULL UNIQUE,
     keywords TEXT,
-    nationality VARCHAR(255),
+    nationality TEXT,
     continent_id INTEGER,
 
     CONSTRAINT fk_countries_continent
@@ -124,7 +124,7 @@ CREATE TABLE IF NOT EXISTS cities (
 
 CREATE TABLE IF NOT EXISTS airports (
     id INTEGER PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
-    ident VARCHAR(10) NOT NULL UNIQUE,
+    ident TEXT NOT NULL UNIQUE,
     airport_type_id INTEGER,
     name TEXT,
     latitude_deg DOUBLE PRECISION,
@@ -159,8 +159,8 @@ CREATE TABLE IF NOT EXISTS airports (
 
 CREATE TABLE IF NOT EXISTS circuits (
     id INTEGER PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
-    circuit_ref VARCHAR(14) UNIQUE,
-    name VARCHAR(44) NOT NULL,
+    circuit_ref TEXT UNIQUE,
+    name TEXT NOT NULL,
     lat DOUBLE PRECISION NOT NULL,
     long DOUBLE PRECISION NOT NULL,
     city_id TEXT,
@@ -175,9 +175,9 @@ CREATE TABLE IF NOT EXISTS circuits (
 
 CREATE TABLE IF NOT EXISTS constructors (
     id INTEGER PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
-    constructor_ref VARCHAR(20) NOT NULL UNIQUE,
-    name VARCHAR(25) NOT NULL,
-    nationality VARCHAR(255) NOT NULL,
+    constructor_ref TEXT NOT NULL UNIQUE,
+    name TEXT NOT NULL,
+    nationality TEXT NOT NULL,
     country_id INTEGER,
     wikipedia_url TEXT,
 
@@ -190,10 +190,10 @@ CREATE TABLE IF NOT EXISTS constructors (
 
 CREATE TABLE IF NOT EXISTS drivers (
     id INTEGER PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
-    driver_ref VARCHAR(18) NOT NULL UNIQUE,
-    given_name VARCHAR(17) NOT NULL,
-    family_name VARCHAR(23) NOT NULL,
-    nationality VARCHAR(255) NOT NULL,
+    driver_ref TEXT NOT NULL UNIQUE,
+    given_name TEXT NOT NULL,
+    family_name TEXT NOT NULL,
+    nationality TEXT NOT NULL,
     date_of_birth DATE NOT NULL,
     country_id INTEGER,
 
@@ -203,18 +203,6 @@ CREATE TABLE IF NOT EXISTS drivers (
         ON DELETE SET NULL
         ON UPDATE CASCADE
 );
-
-ALTER TABLE countries
-ADD COLUMN IF NOT EXISTS nationality VARCHAR(255);
-
-ALTER TABLE constructors
-ALTER COLUMN nationality TYPE VARCHAR(255);
-
-ALTER TABLE drivers
-ADD COLUMN IF NOT EXISTS country_id INTEGER;
-
-ALTER TABLE drivers
-ALTER COLUMN nationality TYPE VARCHAR(255);
 
 DO $$
 BEGIN
@@ -234,7 +222,7 @@ END $$;
 
 CREATE TABLE IF NOT EXISTS races (
     id BIGINT PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
-    race_ref VARCHAR(7) NOT NULL UNIQUE,
+    race_ref TEXT NOT NULL UNIQUE,
     season_id INTEGER NOT NULL,
     round INTEGER NOT NULL,
     race_name TEXT NOT NULL,
@@ -436,7 +424,7 @@ CREATE OR REPLACE FUNCTION get_constructor_dashboard_stats(
 )
 RETURNS TABLE (
     constructor_id INTEGER,
-    constructor_name VARCHAR(25),
+    constructor_name TEXT,
     wins_count INTEGER,
     associated_drivers_count INTEGER,
     first_results_year INTEGER,
@@ -466,7 +454,7 @@ CREATE OR REPLACE FUNCTION get_driver_dashboard_stats(
 RETURNS TABLE (
     driver_id INTEGER,
     driver_name TEXT,
-    constructor_name VARCHAR(25),
+    constructor_name TEXT,
     first_results_year INTEGER,
     last_results_year INTEGER
 )
@@ -507,7 +495,7 @@ CREATE OR REPLACE FUNCTION get_driver_year_circuit_stats(
 RETURNS TABLE (
     season_year INTEGER,
     circuit_id INTEGER,
-    circuit_name VARCHAR(44),
+    circuit_name TEXT,
     total_points DOUBLE PRECISION,
     wins_count INTEGER,
     races_count INTEGER
