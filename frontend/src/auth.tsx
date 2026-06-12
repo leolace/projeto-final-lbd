@@ -11,6 +11,7 @@ import {
   clearStoredToken,
   getStoredToken,
   loginRequest,
+  logoutRequest,
   setStoredToken
 } from "./api";
 import type { AuthUser } from "./types";
@@ -22,7 +23,7 @@ type AuthContextValue = {
   user: AuthUser | null;
   isAuthenticated: boolean;
   login: (login: string, password: string) => Promise<void>;
-  logout: () => void;
+  logout: () => Promise<void>;
 };
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -56,7 +57,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(result.user);
   }, []);
 
-  const logout = useCallback(() => {
+  const logout = useCallback(async () => {
+    if (getStoredToken()) {
+      try {
+        await logoutRequest();
+      } catch {
+        // Mesmo com falha de rede, a sessão local deve ser encerrada.
+      }
+    }
+
     clearStoredToken();
     localStorage.removeItem(userStorageKey);
     setToken(null);

@@ -2,13 +2,13 @@ import { Router } from "express";
 import { HttpError } from "../errors/http-error.js";
 import { getAuthenticatedUser, requireAuth } from "../middleware/require-auth.js";
 import {
-  getAdminOverviewReport,
-  getAdminTopConstructorsReport,
-  getAdminTopDriversReport,
-  getConstructorDriversReport,
-  getConstructorRaceResultsReport,
-  getDriverPerformanceSummaryReport,
-  getDriverRaceResultsReport
+  getAdminAirportsByCityReport,
+  getAdminHierarchyReport,
+  getAdminStatusCountsReport,
+  getConstructorDriverWinsReport,
+  getConstructorStatusCountsReport,
+  getDriverStatusCountsReport,
+  getDriverYearPointsReport
 } from "../services/reports-service.js";
 import { UserType, type AuthUser } from "../types/auth.js";
 import { getPaginationFromRequest } from "../utils/pagination.js";
@@ -23,61 +23,61 @@ function requireUserType(user: AuthUser, tipo: UserType) {
   }
 }
 
-reportsRouter.get("/admin/overview", async (request, response, next) => {
-  try {
-    const user = getAuthenticatedUser(request);
-    requireUserType(user, UserType.Admin);
-
-    response.json(await getAdminOverviewReport(getPaginationFromRequest(request)));
-  } catch (error) {
-    next(error);
+function getRequiredStringQuery(value: unknown, label: string) {
+  if (typeof value !== "string" || value.trim().length === 0) {
+    throw new HttpError(400, `Missing ${label} query parameter`);
   }
-});
 
-reportsRouter.get("/admin/top-drivers", async (request, response, next) => {
-  try {
-    const user = getAuthenticatedUser(request);
-    requireUserType(user, UserType.Admin);
+  return value;
+}
 
-    response.json(await getAdminTopDriversReport(getPaginationFromRequest(request)));
-  } catch (error) {
-    next(error);
-  }
-});
-
-reportsRouter.get("/admin/top-constructors", async (request, response, next) => {
+reportsRouter.get("/admin/status-counts", async (request, response, next) => {
   try {
     const user = getAuthenticatedUser(request);
     requireUserType(user, UserType.Admin);
 
     response.json(
-      await getAdminTopConstructorsReport(getPaginationFromRequest(request))
+      await getAdminStatusCountsReport(getPaginationFromRequest(request))
     );
   } catch (error) {
     next(error);
   }
 });
 
-reportsRouter.get("/constructor/drivers", async (request, response, next) => {
+reportsRouter.get("/admin/airports-by-city", async (request, response, next) => {
   try {
     const user = getAuthenticatedUser(request);
-    requireUserType(user, UserType.Escuderia);
+    requireUserType(user, UserType.Admin);
 
     response.json(
-      await getConstructorDriversReport(user, getPaginationFromRequest(request))
+      await getAdminAirportsByCityReport(
+        getRequiredStringQuery(request.query.city, "city"),
+        getPaginationFromRequest(request)
+      )
     );
   } catch (error) {
     next(error);
   }
 });
 
-reportsRouter.get("/constructor/race-results", async (request, response, next) => {
+reportsRouter.get("/admin/hierarchy", async (request, response, next) => {
+  try {
+    const user = getAuthenticatedUser(request);
+    requireUserType(user, UserType.Admin);
+
+    response.json(await getAdminHierarchyReport(getPaginationFromRequest(request)));
+  } catch (error) {
+    next(error);
+  }
+});
+
+reportsRouter.get("/constructor/driver-wins", async (request, response, next) => {
   try {
     const user = getAuthenticatedUser(request);
     requireUserType(user, UserType.Escuderia);
 
     response.json(
-      await getConstructorRaceResultsReport(
+      await getConstructorDriverWinsReport(
         user,
         getPaginationFromRequest(request)
       )
@@ -87,29 +87,42 @@ reportsRouter.get("/constructor/race-results", async (request, response, next) =
   }
 });
 
-reportsRouter.get("/driver/race-results", async (request, response, next) => {
+reportsRouter.get("/constructor/status-counts", async (request, response, next) => {
   try {
     const user = getAuthenticatedUser(request);
-    requireUserType(user, UserType.Piloto);
+    requireUserType(user, UserType.Escuderia);
 
     response.json(
-      await getDriverRaceResultsReport(user, getPaginationFromRequest(request))
+      await getConstructorStatusCountsReport(
+        user,
+        getPaginationFromRequest(request)
+      )
     );
   } catch (error) {
     next(error);
   }
 });
 
-reportsRouter.get("/driver/performance-summary", async (request, response, next) => {
+reportsRouter.get("/driver/year-points", async (request, response, next) => {
   try {
     const user = getAuthenticatedUser(request);
     requireUserType(user, UserType.Piloto);
 
     response.json(
-      await getDriverPerformanceSummaryReport(
-        user,
-        getPaginationFromRequest(request)
-      )
+      await getDriverYearPointsReport(user, getPaginationFromRequest(request))
+    );
+  } catch (error) {
+    next(error);
+  }
+});
+
+reportsRouter.get("/driver/status-counts", async (request, response, next) => {
+  try {
+    const user = getAuthenticatedUser(request);
+    requireUserType(user, UserType.Piloto);
+
+    response.json(
+      await getDriverStatusCountsReport(user, getPaginationFromRequest(request))
     );
   } catch (error) {
     next(error);

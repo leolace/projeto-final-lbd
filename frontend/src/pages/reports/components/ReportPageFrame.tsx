@@ -6,6 +6,7 @@ import type { ReportRowsResponse } from "../../../types";
 import type { ReportPageSize } from "../hooks/useReportPagination";
 
 type ReportPageFrameProps = {
+  children?: React.ReactNode;
   columns: DataGridColumn[];
   description: string;
   error: unknown;
@@ -24,6 +25,7 @@ type ReportPageFrameProps = {
 };
 
 export function ReportPageFrame({
+  children,
   columns,
   description,
   error,
@@ -57,6 +59,8 @@ export function ReportPageFrame({
           Voltar
         </Link>
       </div>
+
+      {children}
 
       {isLoading ? (
         <div className="rounded-lg border border-gray-300 bg-gray-50 px-4 py-8 text-center text-sm text-gray-600">

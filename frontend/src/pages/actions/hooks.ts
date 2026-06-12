@@ -1,9 +1,15 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
+  createConstructorDriversBatchAction,
   createConstructorAction,
   createDriverAction,
-  getActionCountries
+  getActionCountries,
+  searchConstructorDriverAction
 } from "../../api";
+import type {
+  CreateDriversBatchActionInput,
+  SearchConstructorDriverInput
+} from "../../types";
 
 export function useActionCountries() {
   return useQuery({
@@ -33,6 +39,28 @@ export function useCreateDriverAction() {
 
   return useMutation({
     mutationFn: createDriverAction,
+    onSuccess: async () => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["dashboard"] }),
+        queryClient.invalidateQueries({ queryKey: ["reports"] })
+      ]);
+    }
+  });
+}
+
+export function useSearchConstructorDriverAction() {
+  return useMutation({
+    mutationFn: (input: SearchConstructorDriverInput) =>
+      searchConstructorDriverAction(input)
+  });
+}
+
+export function useCreateConstructorDriversBatchAction() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (input: CreateDriversBatchActionInput) =>
+      createConstructorDriversBatchAction(input),
     onSuccess: async () => {
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ["dashboard"] }),

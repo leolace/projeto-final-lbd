@@ -3,40 +3,40 @@ import { Link } from "react-router-dom";
 import { useAuth } from "../auth";
 import { UserType } from "../types";
 import {
-  description as adminOverviewDescription,
-  icon as adminOverviewIcon,
-  title as adminOverviewTitle,
-} from "./reports/admin/overview/utils";
+  description as adminAirportsByCityDescription,
+  icon as adminAirportsByCityIcon,
+  title as adminAirportsByCityTitle
+} from "./reports/admin/airports-by-city/utils";
 import {
-  description as adminTopConstructorsDescription,
-  icon as adminTopConstructorsIcon,
-  title as adminTopConstructorsTitle,
-} from "./reports/admin/top-constructors/utils";
+  description as adminHierarchyDescription,
+  icon as adminHierarchyIcon,
+  title as adminHierarchyTitle
+} from "./reports/admin/hierarchy/utils";
 import {
-  description as adminTopDriversDescription,
-  icon as adminTopDriversIcon,
-  title as adminTopDriversTitle,
-} from "./reports/admin/top-drivers/utils";
+  description as adminStatusCountsDescription,
+  icon as adminStatusCountsIcon,
+  title as adminStatusCountsTitle
+} from "./reports/admin/status-counts/utils";
 import {
-  description as constructorDriversDescription,
-  icon as constructorDriversIcon,
-  title as constructorDriversTitle,
-} from "./reports/constructor/drivers/utils";
+  description as constructorDriverWinsDescription,
+  icon as constructorDriverWinsIcon,
+  title as constructorDriverWinsTitle
+} from "./reports/constructor/driver-wins/utils";
 import {
-  description as constructorRaceResultsDescription,
-  icon as constructorRaceResultsIcon,
-  title as constructorRaceResultsTitle,
-} from "./reports/constructor/race-results/utils";
+  description as constructorStatusCountsDescription,
+  icon as constructorStatusCountsIcon,
+  title as constructorStatusCountsTitle
+} from "./reports/constructor/status-counts/utils";
 import {
-  description as driverPerformanceSummaryDescription,
-  icon as driverPerformanceSummaryIcon,
-  title as driverPerformanceSummaryTitle,
-} from "./reports/driver/performance-summary/utils";
+  description as driverStatusCountsDescription,
+  icon as driverStatusCountsIcon,
+  title as driverStatusCountsTitle
+} from "./reports/driver/status-counts/utils";
 import {
-  description as driverRaceResultsDescription,
-  icon as driverRaceResultsIcon,
-  title as driverRaceResultsTitle,
-} from "./reports/driver/race-results/utils";
+  description as driverYearPointsDescription,
+  icon as driverYearPointsIcon,
+  title as driverYearPointsTitle
+} from "./reports/driver/year-points/utils";
 
 type ReportLink = {
   description: string;
@@ -49,22 +49,22 @@ function getReportLinks(userType: UserType): ReportLink[] {
   if (userType === UserType.Admin) {
     return [
       {
-        description: adminOverviewDescription,
-        icon: adminOverviewIcon,
-        title: adminOverviewTitle,
-        to: "/reports/admin/overview",
+        description: adminStatusCountsDescription,
+        icon: adminStatusCountsIcon,
+        title: adminStatusCountsTitle,
+        to: "/reports/admin/status-counts",
       },
       {
-        description: adminTopDriversDescription,
-        icon: adminTopDriversIcon,
-        title: adminTopDriversTitle,
-        to: "/reports/admin/top-drivers",
+        description: adminAirportsByCityDescription,
+        icon: adminAirportsByCityIcon,
+        title: adminAirportsByCityTitle,
+        to: "/reports/admin/airports-by-city",
       },
       {
-        description: adminTopConstructorsDescription,
-        icon: adminTopConstructorsIcon,
-        title: adminTopConstructorsTitle,
-        to: "/reports/admin/top-constructors",
+        description: adminHierarchyDescription,
+        icon: adminHierarchyIcon,
+        title: adminHierarchyTitle,
+        to: "/reports/admin/hierarchy",
       },
     ];
   }
@@ -72,32 +72,32 @@ function getReportLinks(userType: UserType): ReportLink[] {
   if (userType === UserType.Escuderia) {
     return [
       {
-        description: constructorDriversDescription,
-        icon: constructorDriversIcon,
-        title: constructorDriversTitle,
-        to: "/reports/constructor/drivers",
+        description: constructorDriverWinsDescription,
+        icon: constructorDriverWinsIcon,
+        title: constructorDriverWinsTitle,
+        to: "/reports/constructor/driver-wins",
       },
       {
-        description: constructorRaceResultsDescription,
-        icon: constructorRaceResultsIcon,
-        title: constructorRaceResultsTitle,
-        to: "/reports/constructor/race-results",
+        description: constructorStatusCountsDescription,
+        icon: constructorStatusCountsIcon,
+        title: constructorStatusCountsTitle,
+        to: "/reports/constructor/status-counts",
       },
     ];
   }
 
   return [
     {
-      description: driverRaceResultsDescription,
-      icon: driverRaceResultsIcon,
-      title: driverRaceResultsTitle,
-      to: "/reports/driver/race-results",
+      description: driverYearPointsDescription,
+      icon: driverYearPointsIcon,
+      title: driverYearPointsTitle,
+      to: "/reports/driver/year-points",
     },
     {
-      description: driverPerformanceSummaryDescription,
-      icon: driverPerformanceSummaryIcon,
-      title: driverPerformanceSummaryTitle,
-      to: "/reports/driver/performance-summary",
+      description: driverStatusCountsDescription,
+      icon: driverStatusCountsIcon,
+      title: driverStatusCountsTitle,
+      to: "/reports/driver/status-counts",
     },
   ];
 }

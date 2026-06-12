@@ -1,11 +1,11 @@
 import { ReportPageFrame } from "../../components/ReportPageFrame";
 import { useReportPagination } from "../../hooks/useReportPagination";
-import { useConstructorRaceResultsReport } from "./hooks";
+import { useDriverStatusCountsReport } from "./hooks";
 import { columns, description, icon, title } from "./utils";
 
-export function ConstructorRaceResultsReportPage() {
+export function DriverStatusCountsReportPage() {
   const pagination = useReportPagination();
-  const report = useConstructorRaceResultsReport({
+  const report = useDriverStatusCountsReport({
     page: pagination.page,
     pageSize: pagination.pageSize
   });

@@ -124,3 +124,32 @@ export type CreateDriverActionInput = {
   date_of_birth: string;
   country_id: number;
 };
+
+export type SearchConstructorDriverInput = {
+  family_name: string;
+};
+
+export type SearchConstructorDriverResponse = {
+  drivers: Array<{
+    driver_ref: string;
+    driver_name: string;
+    date_of_birth: string;
+    country_name: string | null;
+    nationality: string | null;
+  }>;
+};
+
+export type CreateDriversBatchActionInput = {
+  drivers: CreateDriverActionInput[];
+};
+
+export type CreateDriversBatchActionResponse = {
+  drivers: Array<{
+    id: number;
+    driver_ref: string;
+    given_name: string;
+    family_name: string;
+    date_of_birth: string;
+    country_id: number;
+  }>;
+};

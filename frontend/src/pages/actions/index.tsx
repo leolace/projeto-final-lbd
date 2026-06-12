@@ -1,13 +1,16 @@
-import { Flag, UserPlus, Users } from "lucide-react";
+import { FileUp, Flag, Search, UserPlus, Users } from "lucide-react";
 import { useState, type FormEvent } from "react";
 import { getApiErrorMessage } from "../../api";
 import { useAuth } from "../../auth";
-import type { ActionCountry } from "../../types";
+import { DataGrid, type DataGridColumn } from "../../components/DataGrid";
+import type { ActionCountry, CreateDriverActionInput } from "../../types";
 import { UserType } from "../../types";
 import {
   useActionCountries,
+  useCreateConstructorDriversBatchAction,
   useCreateConstructorAction,
-  useCreateDriverAction
+  useCreateDriverAction,
+  useSearchConstructorDriverAction
 } from "./hooks";
 
 type FormStatus = {
@@ -45,6 +48,14 @@ const initialDriverForm: DriverFormState = {
   country_id: ""
 };
 
+const constructorSearchColumns: DataGridColumn[] = [
+  { key: "driver_name", header: "Piloto" },
+  { key: "driver_ref", header: "Referência" },
+  { key: "date_of_birth", header: "Nascimento", format: "date" },
+  { key: "country_name", header: "País" },
+  { key: "nationality", header: "Nacionalidade" }
+];
+
 const inputClassName =
   "h-11 w-full rounded-md border border-gray-300 bg-white px-3 text-sm text-black outline-none transition focus:border-black";
 
@@ -55,6 +66,10 @@ export function ActionsPage() {
   const { user } = useAuth();
 
   if (user?.tipo !== UserType.Admin) {
+    if (user?.tipo === UserType.Escuderia) {
+      return <ConstructorActions />;
+    }
+
     return (
       <section className="space-y-6">
         <PageHeader />
@@ -66,6 +81,18 @@ export function ActionsPage() {
   }
 
   return <AdminActions />;
+}
+
+function ConstructorActions() {
+  return (
+    <section className="space-y-8">
+      <PageHeader />
+      <div className="grid gap-6 xl:grid-cols-2">
+        <ConstructorDriverSearch />
+        <ConstructorDriverBatchForm />
+      </div>
+    </section>
+  );
 }
 
 function AdminActions() {
@@ -108,6 +135,136 @@ function PageHeader() {
       </p>
       <h2 className="mt-2 text-3xl font-semibold">Cadastros</h2>
     </div>
+  );
+}
+
+function ConstructorDriverSearch() {
+  const mutation = useSearchConstructorDriverAction();
+  const [familyName, setFamilyName] = useState("");
+  const [status, setStatus] = useState<FormStatus | null>(null);
+
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const formElement = event.currentTarget;
+    setStatus(null);
+
+    try {
+      await mutation.mutateAsync({
+        family_name: familyName
+      });
+    } catch (error) {
+      setStatus({
+        tone: "error",
+        message: getApiErrorMessage(error)
+      });
+    }
+  };
+
+  const rows = mutation.data?.drivers ?? [];
+
+  return (
+    <form
+      className="space-y-5 rounded-lg border border-gray-300 bg-gray-50 p-5"
+      onSubmit={handleSubmit}
+    >
+      <FormTitle icon={Search} title="Consultar piloto por sobrenome" />
+      <InputField
+        label="Sobrenome"
+        onChange={setFamilyName}
+        required
+        value={familyName}
+      />
+      <StatusMessage status={status} />
+      <button
+        className={buttonClassName}
+        disabled={mutation.isPending}
+        type="submit"
+      >
+        <Search className="h-4 w-4" />
+        {mutation.isPending ? "Consultando..." : "Consultar piloto"}
+      </button>
+
+      {mutation.isSuccess ? (
+        <DataGrid
+          columns={constructorSearchColumns}
+          includeUnconfiguredColumns={false}
+          rows={rows}
+        />
+      ) : null}
+    </form>
+  );
+}
+
+function ConstructorDriverBatchForm() {
+  const mutation = useCreateConstructorDriversBatchAction();
+  const [fileName, setFileName] = useState("");
+  const [fileContent, setFileContent] = useState("");
+  const [status, setStatus] = useState<FormStatus | null>(null);
+
+  const handleFileChange = async (file: File | null) => {
+    setStatus(null);
+
+    if (!file) {
+      setFileName("");
+      setFileContent("");
+      return;
+    }
+
+    setFileName(file.name);
+    setFileContent(await file.text());
+  };
+
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setStatus(null);
+
+    try {
+      const drivers = parseDriversFile(fileContent);
+      const result = await mutation.mutateAsync({ drivers });
+      setStatus({
+        tone: "success",
+        message: `${result.drivers.length} piloto(s) inserido(s) com sucesso.`
+      });
+      setFileName("");
+      setFileContent("");
+      formElement.reset();
+    } catch (error) {
+      setStatus({
+        tone: "error",
+        message: getApiErrorMessage(error)
+      });
+    }
+  };
+
+  return (
+    <form
+      className="space-y-5 rounded-lg border border-gray-300 bg-gray-50 p-5"
+      onSubmit={handleSubmit}
+    >
+      <FormTitle icon={FileUp} title="Inserir pilotos por arquivo" />
+      <label className="block space-y-2">
+        <span className="text-sm font-medium text-gray-700">Arquivo</span>
+        <input
+          accept=".csv,.txt"
+          className={inputClassName}
+          onChange={(event) => handleFileChange(event.target.files?.[0] ?? null)}
+          required
+          type="file"
+        />
+      </label>
+      {fileName ? (
+        <p className="text-sm text-gray-600">Arquivo selecionado: {fileName}</p>
+      ) : null}
+      <StatusMessage status={status} />
+      <button
+        className={buttonClassName}
+        disabled={mutation.isPending || !fileContent}
+        type="submit"
+      >
+        <FileUp className="h-4 w-4" />
+        {mutation.isPending ? "Inserindo..." : "Inserir pilotos"}
+      </button>
+    </form>
   );
 }
 
@@ -341,6 +498,49 @@ function CountrySelect({
       </select>
     </label>
   );
+}
+
+function parseDriversFile(content: string): CreateDriverActionInput[] {
+  const lines = content
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter(Boolean);
+
+  if (lines.length === 0) {
+    throw new Error("Arquivo vazio.");
+  }
+
+  const dataLines =
+    lines[0].toLowerCase().startsWith("driver_ref") ? lines.slice(1) : lines;
+
+  if (dataLines.length === 0) {
+    throw new Error("Arquivo sem pilotos para inserir.");
+  }
+
+  return dataLines.map((line, index) => {
+    const separator = line.includes(";") ? ";" : ",";
+    const [driverRef, givenName, familyName, dateOfBirth, countryId] = line
+      .split(separator)
+      .map((value) => value.trim());
+
+    if (!driverRef || !givenName || !familyName || !dateOfBirth || !countryId) {
+      throw new Error(`Linha ${index + 1} incompleta.`);
+    }
+
+    const parsedCountryId = Number(countryId);
+
+    if (!Number.isInteger(parsedCountryId) || parsedCountryId <= 0) {
+      throw new Error(`Linha ${index + 1} possui country_id inválido.`);
+    }
+
+    return {
+      driver_ref: driverRef,
+      given_name: givenName,
+      family_name: familyName,
+      date_of_birth: dateOfBirth,
+      country_id: parsedCountryId
+    };
+  });
 }
 
 function StatusMessage({ status }: { status: FormStatus | null }) {

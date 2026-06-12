@@ -408,6 +408,9 @@ CREATE INDEX IF NOT EXISTS idx_cities_time_zone_id ON cities(time_zone_id);
 
 CREATE INDEX IF NOT EXISTS idx_airports_city_id ON airports(city_id);
 CREATE INDEX IF NOT EXISTS idx_airports_airport_type_id ON airports(airport_type_id);
+-- Auxilia o relatório de aeroportos por cidade, combinando tipo e coordenadas.
+CREATE INDEX IF NOT EXISTS idx_airports_type_city_geo
+ON airports(airport_type_id, city_id, latitude_deg, longitude_deg);
 
 CREATE INDEX IF NOT EXISTS idx_circuits_city_id ON circuits(city_id);
 CREATE INDEX IF NOT EXISTS idx_constructors_country_id ON constructors(country_id);
@@ -424,6 +427,19 @@ CREATE INDEX IF NOT EXISTS idx_results_race_id ON results(race_id);
 CREATE INDEX IF NOT EXISTS idx_results_driver_id ON results(driver_id);
 CREATE INDEX IF NOT EXISTS idx_results_constructor_id ON results(constructor_id);
 CREATE INDEX IF NOT EXISTS idx_results_status_id ON results(status_id);
+-- Índices compostos para relatórios filtrados por escuderia/piloto e status.
+CREATE INDEX IF NOT EXISTS idx_results_constructor_status
+ON results(constructor_id, status_id);
+CREATE INDEX IF NOT EXISTS idx_results_driver_status
+ON results(driver_id, status_id);
+CREATE INDEX IF NOT EXISTS idx_results_constructor_position_driver
+ON results(constructor_id, position_order, driver_id);
+CREATE INDEX IF NOT EXISTS idx_results_driver_race_points
+ON results(driver_id, race_id, points);
+
+-- Auxilia a busca de cidades brasileiras pelo nome informado no relatório de aeroportos.
+CREATE INDEX IF NOT EXISTS idx_cities_country_lower_name
+ON cities(country_id, lower(name));
 
 CREATE INDEX IF NOT EXISTS idx_standings_season_id ON standings(season_id);
 
@@ -530,6 +546,125 @@ AS $$
     WHERE d.driver_ref = p_driver_ref
     GROUP BY s.year, ci.id, ci.name
     ORDER BY s.year DESC, ci.name ASC;
+$$;
+
+-- =========================================================
+-- VISÕES E FUNÇÕES DE RELATÓRIOS
+-- =========================================================
+
+CREATE OR REPLACE VIEW race_lap_participation_view AS
+SELECT
+    ra.id AS race_id,
+    ra.race_name,
+    ra.round,
+    ci.name AS circuit_name,
+    COALESCE(MAX(r.laps), 0)::DOUBLE PRECISION AS registered_laps,
+    COUNT(DISTINCT r.driver_id)::INTEGER AS participants_count
+FROM races ra
+JOIN circuits ci ON ci.id = ra.circuit_id
+LEFT JOIN results r ON r.race_id = ra.id
+GROUP BY ra.id, ra.race_name, ra.round, ci.name;
+
+CREATE OR REPLACE FUNCTION get_constructor_driver_wins(
+    p_constructor_ref TEXT
+)
+RETURNS TABLE (
+    driver_name TEXT,
+    wins_count INTEGER
+)
+LANGUAGE sql
+STABLE
+AS $$
+    SELECT
+        d.given_name || ' ' || d.family_name AS driver_name,
+        COUNT(*) FILTER (WHERE r.position_order = 1)::INTEGER AS wins_count
+    FROM constructors c
+    JOIN results r ON r.constructor_id = c.id
+    JOIN drivers d ON d.id = r.driver_id
+    WHERE c.constructor_ref = p_constructor_ref
+    GROUP BY d.id, d.given_name, d.family_name
+    ORDER BY wins_count DESC, driver_name ASC;
+$$;
+
+CREATE OR REPLACE FUNCTION get_constructor_status_counts(
+    p_constructor_ref TEXT
+)
+RETURNS TABLE (
+    status_name TEXT,
+    results_count INTEGER
+)
+LANGUAGE sql
+STABLE
+AS $$
+    SELECT
+        s.status AS status_name,
+        COUNT(r.id)::INTEGER AS results_count
+    FROM status s
+    LEFT JOIN results r ON r.status_id = s.id
+      AND r.constructor_id = (
+          SELECT c.id
+          FROM constructors c
+          WHERE c.constructor_ref = p_constructor_ref
+          LIMIT 1
+      )
+    GROUP BY s.id, s.status
+    ORDER BY results_count DESC, status_name ASC;
+$$;
+
+CREATE OR REPLACE FUNCTION get_driver_year_points_report(
+    p_driver_ref TEXT
+)
+RETURNS TABLE (
+    season_year INTEGER,
+    total_points_year DOUBLE PRECISION,
+    race_date DATE,
+    race_name TEXT,
+    circuit_name VARCHAR(44),
+    race_points DOUBLE PRECISION
+)
+LANGUAGE sql
+STABLE
+AS $$
+    SELECT
+        s.year AS season_year,
+        SUM(r.points) OVER (PARTITION BY s.year)::DOUBLE PRECISION AS total_points_year,
+        ra.race_date,
+        ra.race_name,
+        ci.name AS circuit_name,
+        r.points AS race_points
+    FROM drivers d
+    JOIN results r ON r.driver_id = d.id
+    JOIN races ra ON ra.id = r.race_id
+    JOIN seasons s ON s.id = ra.season_id
+    JOIN circuits ci ON ci.id = ra.circuit_id
+    WHERE d.driver_ref = p_driver_ref
+      AND r.points > 0
+    ORDER BY s.year DESC, ra.race_date ASC, ra.race_name ASC;
+$$;
+
+CREATE OR REPLACE FUNCTION get_driver_status_counts(
+    p_driver_ref TEXT
+)
+RETURNS TABLE (
+    status_name TEXT,
+    results_count INTEGER
+)
+LANGUAGE sql
+STABLE
+AS $$
+    SELECT
+        s.status AS status_name,
+        COUNT(r.id)::INTEGER AS results_count
+    FROM status s
+    LEFT JOIN results r ON r.status_id = s.id
+      AND r.driver_id = (
+          SELECT d.id
+          FROM drivers d
+          WHERE d.driver_ref = p_driver_ref
+          LIMIT 1
+      )
+    GROUP BY s.id, s.status
+    ORDER BY results_count DESC, status_name ASC;
 $$;
 
 COMMIT;

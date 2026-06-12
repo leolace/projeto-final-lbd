@@ -1,11 +1,11 @@
 import { ReportPageFrame } from "../../components/ReportPageFrame";
 import { useReportPagination } from "../../hooks/useReportPagination";
-import { useConstructorDriversReport } from "./hooks";
+import { useAdminHierarchyReport } from "./hooks";
 import { columns, description, icon, title } from "./utils";
 
-export function ConstructorDriversReportPage() {
+export function AdminHierarchyReportPage() {
   const pagination = useReportPagination();
-  const report = useConstructorDriversReport({
+  const report = useAdminHierarchyReport({
     page: pagination.page,
     pageSize: pagination.pageSize
   });

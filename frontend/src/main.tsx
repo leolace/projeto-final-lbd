@@ -11,14 +11,14 @@ import { DashboardPage } from "./pages/dashboards";
 import { HomeRedirect } from "./pages/HomeRedirect";
 import { LoginPage } from "./pages/LoginPage";
 import { ReportsPage } from "./pages/ReportsPage";
+import { AdminAirportsByCityReportPage } from "./pages/reports/admin/airports-by-city";
+import { AdminHierarchyReportPage } from "./pages/reports/admin/hierarchy";
+import { AdminStatusCountsReportPage } from "./pages/reports/admin/status-counts";
+import { ConstructorDriverWinsReportPage } from "./pages/reports/constructor/driver-wins";
+import { ConstructorStatusCountsReportPage } from "./pages/reports/constructor/status-counts";
 import { ReportAccess } from "./pages/reports/components/ReportAccess";
-import { AdminOverviewReportPage } from "./pages/reports/admin/overview";
-import { AdminTopConstructorsReportPage } from "./pages/reports/admin/top-constructors";
-import { AdminTopDriversReportPage } from "./pages/reports/admin/top-drivers";
-import { ConstructorDriversReportPage } from "./pages/reports/constructor/drivers";
-import { ConstructorRaceResultsReportPage } from "./pages/reports/constructor/race-results";
-import { DriverPerformanceSummaryReportPage } from "./pages/reports/driver/performance-summary";
-import { DriverRaceResultsReportPage } from "./pages/reports/driver/race-results";
+import { DriverStatusCountsReportPage } from "./pages/reports/driver/status-counts";
+import { DriverYearPointsReportPage } from "./pages/reports/driver/year-points";
 import "./styles.css";
 import { UserType } from "./types";
 
@@ -56,58 +56,58 @@ const router = createBrowserRouter([
                 element: <ActionsPage />
               },
               {
-                path: "reports/admin/overview",
+                path: "reports/admin/status-counts",
                 element: (
                   <ReportAccess userType={UserType.Admin}>
-                    <AdminOverviewReportPage />
+                    <AdminStatusCountsReportPage />
                   </ReportAccess>
                 )
               },
               {
-                path: "reports/admin/top-drivers",
+                path: "reports/admin/airports-by-city",
                 element: (
                   <ReportAccess userType={UserType.Admin}>
-                    <AdminTopDriversReportPage />
+                    <AdminAirportsByCityReportPage />
                   </ReportAccess>
                 )
               },
               {
-                path: "reports/admin/top-constructors",
+                path: "reports/admin/hierarchy",
                 element: (
                   <ReportAccess userType={UserType.Admin}>
-                    <AdminTopConstructorsReportPage />
+                    <AdminHierarchyReportPage />
                   </ReportAccess>
                 )
               },
               {
-                path: "reports/constructor/drivers",
+                path: "reports/constructor/driver-wins",
                 element: (
                   <ReportAccess userType={UserType.Escuderia}>
-                    <ConstructorDriversReportPage />
+                    <ConstructorDriverWinsReportPage />
                   </ReportAccess>
                 )
               },
               {
-                path: "reports/constructor/race-results",
+                path: "reports/constructor/status-counts",
                 element: (
                   <ReportAccess userType={UserType.Escuderia}>
-                    <ConstructorRaceResultsReportPage />
+                    <ConstructorStatusCountsReportPage />
                   </ReportAccess>
                 )
               },
               {
-                path: "reports/driver/race-results",
+                path: "reports/driver/year-points",
                 element: (
                   <ReportAccess userType={UserType.Piloto}>
-                    <DriverRaceResultsReportPage />
+                    <DriverYearPointsReportPage />
                   </ReportAccess>
                 )
               },
               {
-                path: "reports/driver/performance-summary",
+                path: "reports/driver/status-counts",
                 element: (
                   <ReportAccess userType={UserType.Piloto}>
-                    <DriverPerformanceSummaryReportPage />
+                    <DriverStatusCountsReportPage />
                   </ReportAccess>
                 )
               }

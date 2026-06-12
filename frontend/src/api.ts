@@ -3,9 +3,13 @@ import type {
   ActionCountriesResponse,
   AuthUser,
   CreateConstructorActionInput,
+  CreateDriversBatchActionResponse,
   CreateDriverActionInput,
+  CreateDriversBatchActionInput,
   DashboardResponse,
   ReportRowsResponse,
+  SearchConstructorDriverInput,
+  SearchConstructorDriverResponse,
   SeasonsResponse
 } from "./types";
 
@@ -70,6 +74,10 @@ export async function getCurrentUser() {
   return response.data.user;
 }
 
+export async function logoutRequest() {
+  await api.post("/auth/logout");
+}
+
 export async function getDashboard(params?: { season?: number }) {
   const response = await api.get<DashboardResponse>("/dashboard", {
     params
@@ -104,6 +112,30 @@ export async function createDriverAction(input: CreateDriverActionInput) {
   return response.data;
 }
 
+export async function searchConstructorDriverAction(
+  input: SearchConstructorDriverInput
+) {
+  const response = await api.get<SearchConstructorDriverResponse>(
+    "/actions/constructor/drivers/search",
+    {
+      params: input
+    }
+  );
+
+  return response.data;
+}
+
+export async function createConstructorDriversBatchAction(
+  input: CreateDriversBatchActionInput
+) {
+  const response = await api.post<CreateDriversBatchActionResponse>(
+    "/actions/constructor/drivers/batch",
+    input
+  );
+
+  return response.data;
+}
+
 export type ReportPaginationParams = {
   page: number;
   pageSize: number | "all";
@@ -111,10 +143,14 @@ export type ReportPaginationParams = {
 
 export async function getReportRows(
   path: string,
-  pagination: ReportPaginationParams
+  pagination: ReportPaginationParams,
+  params: Record<string, string | number | undefined> = {}
 ) {
   const response = await api.get<ReportRowsResponse>(path, {
-    params: pagination
+    params: {
+      ...pagination,
+      ...params
+    }
   });
 
   return response.data;

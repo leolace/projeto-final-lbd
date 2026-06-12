@@ -1,3 +1,4 @@
+import { pool } from "../db/client.js";
 import { query } from "../db/service.js";
 import { HttpError } from "../errors/http-error.js";
 import { UserType, type AuthUser } from "../types/auth.js";
@@ -15,6 +16,14 @@ type CreateDriverInput = {
   family_name: string;
   date_of_birth: string;
   country_id: number;
+};
+
+type CreateDriversBatchInput = {
+  drivers: CreateDriverInput[];
+};
+
+type InsertedDriver = CreateDriverInput & {
+  id: number;
 };
 
 type PgError = {
@@ -140,8 +149,124 @@ export async function createDriverAction(user: AuthUser, body: unknown) {
   }
 }
 
+export async function searchConstructorDriverAction(
+  user: AuthUser,
+  familyName: unknown
+) {
+  requireConstructor(user);
+
+  if (typeof familyName !== "string" || familyName.trim().length === 0) {
+    throw new HttpError(400, "Missing family_name");
+  }
+
+  const result = await query<{
+    driver_ref: string;
+    driver_name: string;
+    date_of_birth: string;
+    country_name: string | null;
+    nationality: string | null;
+  }>(
+    `
+      select distinct
+        d.driver_ref,
+        d.given_name || ' ' || d.family_name as driver_name,
+        d.date_of_birth::text as date_of_birth,
+        co.name as country_name,
+        co.nationality
+      from constructors c
+      join results r on r.constructor_id = c.id
+      join drivers d on d.id = r.driver_id
+      left join countries co on co.id = d.country_id
+      where c.constructor_ref = $1
+        and lower(d.family_name) = lower($2)
+      order by driver_name asc
+    `,
+    [user.idOriginal, familyName.trim()]
+  );
+
+  return {
+    drivers: result.rows
+  };
+}
+
+export async function createConstructorDriversBatchAction(
+  user: AuthUser,
+  body: unknown
+) {
+  requireConstructor(user);
+
+  const input = parseDriversBatchInput(body);
+  await ensureUniqueDriverNames(input.drivers);
+
+  const client = await pool.connect();
+
+  try {
+    await client.query("begin");
+
+    const insertedDrivers: InsertedDriver[] = [];
+
+    for (const driver of input.drivers) {
+      const nationality = await getCountryNationality(driver.country_id);
+      const result = await client.query<{
+        id: number;
+        driver_ref: string;
+        given_name: string;
+        family_name: string;
+        date_of_birth: string;
+        country_id: number;
+      }>(
+        `
+          insert into drivers (
+            driver_ref,
+            given_name,
+            family_name,
+            nationality,
+            date_of_birth,
+            country_id
+          )
+          values ($1, $2, $3, $4, $5, $6)
+          returning
+            id,
+            driver_ref,
+            given_name,
+            family_name,
+            date_of_birth::text as date_of_birth,
+            country_id
+        `,
+        [
+          driver.driver_ref,
+          driver.given_name,
+          driver.family_name,
+          nationality,
+          driver.date_of_birth,
+          driver.country_id
+        ]
+      );
+
+      insertedDrivers.push(result.rows[0]);
+    }
+
+    await client.query("commit");
+
+    return {
+      drivers: insertedDrivers
+    };
+  } catch (error) {
+    await client.query("rollback");
+    throw mapInsertError(error, "piloto");
+  } finally {
+    client.release();
+  }
+}
+
 function requireAdmin(user: AuthUser) {
   if (user.tipo !== UserType.Admin) {
+    throw new HttpError(403, "Action not available for this user type");
+  }
+}
+
+function requireConstructor(user: AuthUser) {
+  if (user.tipo !== UserType.Escuderia) {
     throw new HttpError(403, "Action not available for this user type");
   }
 }
@@ -194,6 +319,66 @@ function parseDriverInput(body: unknown): CreateDriverInput {
     date_of_birth: dateOfBirth,
     country_id: getRequiredPositiveInteger(value, "country_id")
   };
+}
+
+function parseDriversBatchInput(body: unknown): CreateDriversBatchInput {
+  const value = getObjectBody(body);
+  const drivers = value.drivers;
+
+  if (!Array.isArray(drivers) || drivers.length === 0) {
+    throw new HttpError(400, "Missing drivers");
+  }
+
+  if (drivers.length > 100) {
+    throw new HttpError(400, "O arquivo deve conter no máximo 100 pilotos");
+  }
+
+  return {
+    drivers: drivers.map((driver) => parseDriverInput(driver))
+  };
+}
+
+async function ensureUniqueDriverNames(drivers: CreateDriverInput[]) {
+  const uniqueNames = new Set<string>();
+
+  for (const driver of drivers) {
+    const key = createDriverNameKey(driver.given_name, driver.family_name);
+
+    if (uniqueNames.has(key)) {
+      throw new HttpError(
+        409,
+        `Piloto duplicado no arquivo: ${driver.given_name} ${driver.family_name}`
+      );
+    }
+
+    uniqueNames.add(key);
+  }
+
+  const result = await query<{
+    given_name: string;
+    family_name: string;
+  }>(
+    `
+      select given_name, family_name
+      from drivers
+      where lower(given_name || ' ' || family_name) = any($1::text[])
+      limit 1
+    `,
+    [Array.from(uniqueNames)]
+  );
+
+  const existingDriver = result.rows[0];
+
+  if (existingDriver) {
+    throw new HttpError(
+      409,
+      `Piloto já cadastrado: ${existingDriver.given_name} ${existingDriver.family_name}`
+    );
+  }
+}
+
+function createDriverNameKey(givenName: string, familyName: string) {
+  return `${givenName} ${familyName}`.trim().toLowerCase();
 }
 
 function getObjectBody(body: unknown) {
