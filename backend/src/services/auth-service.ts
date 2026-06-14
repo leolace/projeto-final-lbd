@@ -55,13 +55,6 @@ export async function login(loginValue: string, password: string) {
   }
 
   const user = mapUser(row);
-  await query(
-    `
-      insert into users_log (userId, action)
-      values ($1, $2)
-    `,
-    [user.userId, "LOGIN"]
-  );
   const token = jwt.sign(
     {
       userId: user.userId,
@@ -72,16 +65,6 @@ export async function login(loginValue: string, password: string) {
   );
 
   return { token, user };
-}
-
-export async function logout(userId: string) {
-  await query(
-    `
-      insert into users_log (userId, action)
-      values ($1, $2)
-    `,
-    [userId, "LOGOUT"]
-  );
 }
 
 export async function getUserById(userId: string) {

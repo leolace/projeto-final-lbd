@@ -1,6 +1,7 @@
 import cors from "cors";
 import express from "express";
 import { pingDatabase } from "./db/service.js";
+import { auditUserAction } from "./middleware/audit-user-action.js";
 import { errorHandler } from "./middleware/error-handler.js";
 import { actionsRouter } from "./routes/actions-router.js";
 import { authRouter } from "./routes/auth-router.js";
@@ -29,6 +30,8 @@ app.get("/db/ping", async (_request, response, next) => {
     next(error);
   }
 });
+
+app.use(auditUserAction);
 
 app.use("/auth", authRouter);
 app.use("/actions", actionsRouter);

@@ -365,6 +365,24 @@ CREATE TABLE IF NOT EXISTS constructor_standings (
 );
 
 -- =========================================================
+-- LAP TIMES
+-- =========================================================
+
+CREATE TABLE IF NOT EXISTS lap_times (
+    race_id   BIGINT  NOT NULL,
+    driver_id INTEGER NOT NULL,
+    lap       INTEGER NOT NULL,
+    position  INTEGER,
+    time      INTERVAL,
+    milliseconds INTEGER,
+    PRIMARY KEY (race_id, driver_id, lap),
+    CONSTRAINT fk_lap_times_race   FOREIGN KEY (race_id)
+        REFERENCES races(id)   ON DELETE CASCADE ON UPDATE CASCADE,
+    CONSTRAINT fk_lap_times_driver FOREIGN KEY (driver_id)
+        REFERENCES drivers(id) ON DELETE RESTRICT ON UPDATE CASCADE
+);
+
+-- =========================================================
 -- RELACIONAMENTOS AUXILIARES
 -- =========================================================
 
@@ -641,28 +659,6 @@ AS $$
     GROUP BY s.id, s.status
     ORDER BY results_count DESC, status_name ASC;
 $$;
-
-COMMIT;
-
-BEGIN;
-
--- =========================================================
--- TABELA LAP TIMES PARA O EXERCÍCIO 6
--- =========================================================
-
-CREATE TABLE IF NOT EXISTS lap_times (
-    race_id   BIGINT  NOT NULL,
-    driver_id INTEGER NOT NULL,
-    lap       INTEGER NOT NULL,
-    position  INTEGER,
-    time      INTERVAL,
-    milliseconds INTEGER,
-    PRIMARY KEY (race_id, driver_id, lap),
-    CONSTRAINT fk_lap_times_race   FOREIGN KEY (race_id)
-        REFERENCES races(id)   ON DELETE CASCADE ON UPDATE CASCADE,
-    CONSTRAINT fk_lap_times_driver FOREIGN KEY (driver_id)
-        REFERENCES drivers(id) ON DELETE RESTRICT ON UPDATE CASCADE
-);
 
 COMMIT;
 
