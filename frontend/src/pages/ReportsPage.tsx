@@ -8,11 +8,6 @@ import {
   title as adminAirportsByCityTitle
 } from "./reports/admin/airports-by-city/utils";
 import {
-  description as adminHierarchyDescription,
-  icon as adminHierarchyIcon,
-  title as adminHierarchyTitle
-} from "./reports/admin/hierarchy/utils";
-import {
   description as adminStatusCountsDescription,
   icon as adminStatusCountsIcon,
   title as adminStatusCountsTitle
@@ -59,12 +54,6 @@ function getReportLinks(userType: UserType): ReportLink[] {
         icon: adminAirportsByCityIcon,
         title: adminAirportsByCityTitle,
         to: "/reports/admin/airports-by-city",
-      },
-      {
-        description: adminHierarchyDescription,
-        icon: adminHierarchyIcon,
-        title: adminHierarchyTitle,
-        to: "/reports/admin/hierarchy",
       },
     ];
   }

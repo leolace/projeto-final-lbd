@@ -540,19 +540,6 @@ $$;
 -- VISÕES E FUNÇÕES DE RELATÓRIOS
 -- =========================================================
 
-CREATE OR REPLACE VIEW race_lap_participation_view AS
-SELECT
-    ra.id AS race_id,
-    ra.race_name,
-    ra.round,
-    ci.name AS circuit_name,
-    COALESCE(MAX(r.laps), 0)::DOUBLE PRECISION AS registered_laps,
-    COUNT(DISTINCT r.driver_id)::INTEGER AS participants_count
-FROM races ra
-JOIN circuits ci ON ci.id = ra.circuit_id
-LEFT JOIN results r ON r.race_id = ra.id
-GROUP BY ra.id, ra.race_name, ra.round, ci.name;
-
 CREATE OR REPLACE FUNCTION get_constructor_driver_wins(
     p_constructor_ref TEXT
 )

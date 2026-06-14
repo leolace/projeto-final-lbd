@@ -3,7 +3,6 @@ import { HttpError } from "../errors/http-error.js";
 import { getAuthenticatedUser, requireAuth } from "../middleware/require-auth.js";
 import {
   getAdminAirportsByCityReport,
-  getAdminHierarchyReport,
   getAdminStatusCountsReport,
   getConstructorDriverWinsReport,
   getConstructorStatusCountsReport,
@@ -55,17 +54,6 @@ reportsRouter.get("/admin/airports-by-city", async (request, response, next) => 
         getPaginationFromRequest(request)
       )
     );
-  } catch (error) {
-    next(error);
-  }
-});
-
-reportsRouter.get("/admin/hierarchy", async (request, response, next) => {
-  try {
-    const user = getAuthenticatedUser(request);
-    requireUserType(user, UserType.Admin);
-
-    response.json(await getAdminHierarchyReport(getPaginationFromRequest(request)));
   } catch (error) {
     next(error);
   }
