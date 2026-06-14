@@ -15,5 +15,6 @@
     "db:down": "docker compose -f backend/docker-compose.yml down",
     "db:pgadmin": "docker compose -f backend/docker-compose.yml up -d pgadmin",
     "typecheck": "pnpm -r typecheck"
-  }
+  },
+  "packageManager": "pnpm@10.28.1"
 }
