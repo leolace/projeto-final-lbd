@@ -1,22 +1,18 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
-  createConstructorDriversBatchAction,
   createConstructorAction,
   createDriverAction,
   getActionCountries,
-  searchConstructorDriverAction
+  importConstructorDriversAction,
+  searchConstructorDriversAction,
 } from "../../api";
-import type {
-  CreateDriversBatchActionInput,
-  SearchConstructorDriverInput
-} from "../../types";
 
 export function useActionCountries() {
   return useQuery({
     queryKey: ["actions", "countries"],
     queryFn: getActionCountries,
     refetchOnMount: false,
-    refetchOnWindowFocus: false
+    refetchOnWindowFocus: false,
   });
 }
 
@@ -28,9 +24,9 @@ export function useCreateConstructorAction() {
     onSuccess: async () => {
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ["dashboard"] }),
-        queryClient.invalidateQueries({ queryKey: ["reports"] })
+        queryClient.invalidateQueries({ queryKey: ["reports"] }),
       ]);
-    }
+    },
   });
 }
 
@@ -42,30 +38,28 @@ export function useCreateDriverAction() {
     onSuccess: async () => {
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ["dashboard"] }),
-        queryClient.invalidateQueries({ queryKey: ["reports"] })
+        queryClient.invalidateQueries({ queryKey: ["reports"] }),
       ]);
-    }
+    },
   });
 }
 
-export function useSearchConstructorDriverAction() {
+export function useSearchConstructorDriversAction() {
   return useMutation({
-    mutationFn: (input: SearchConstructorDriverInput) =>
-      searchConstructorDriverAction(input)
+    mutationFn: searchConstructorDriversAction,
   });
 }
 
-export function useCreateConstructorDriversBatchAction() {
+export function useImportConstructorDriversAction() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (input: CreateDriversBatchActionInput) =>
-      createConstructorDriversBatchAction(input),
+    mutationFn: importConstructorDriversAction,
     onSuccess: async () => {
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ["dashboard"] }),
-        queryClient.invalidateQueries({ queryKey: ["reports"] })
+        queryClient.invalidateQueries({ queryKey: ["reports"] }),
       ]);
-    }
+    },
   });
 }

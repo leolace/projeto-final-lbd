@@ -11,6 +11,7 @@
     "db:structure": "docker compose -f backend/docker-compose.yml exec -T postgres sh -c 'cd /workspace && psql -v ON_ERROR_STOP=1 -U \"$POSTGRES_USER\" -d \"$POSTGRES_DB\" -f init.sql'",
     "db:load": "docker compose -f backend/docker-compose.yml exec -T postgres sh -c 'cd /workspace && psql -v ON_ERROR_STOP=1 -U \"$POSTGRES_USER\" -d \"$POSTGRES_DB\" -f carga.sql'",
     "db:clean": "docker compose -f backend/docker-compose.yml exec -T postgres sh -c 'cd /workspace && psql -v ON_ERROR_STOP=1 -U \"$POSTGRES_USER\" -d \"$POSTGRES_DB\" -f limpar-carga.sql'",
+    "db:clean:structure": "docker compose -f backend/docker-compose.yml exec -T postgres sh -c 'cd /workspace && psql -v ON_ERROR_STOP=1 -U \"$POSTGRES_USER\" -d \"$POSTGRES_DB\" -f limpar-estrutura.sql'",
     "db:down": "docker compose -f backend/docker-compose.yml down",
     "db:pgadmin": "docker compose -f backend/docker-compose.yml up -d pgadmin",
     "typecheck": "pnpm -r typecheck"

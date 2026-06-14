@@ -2,14 +2,13 @@ import axios, { AxiosError } from "axios";
 import type {
   ActionCountriesResponse,
   AuthUser,
+  ConstructorDriverSearchResponse,
   CreateConstructorActionInput,
-  CreateDriversBatchActionResponse,
   CreateDriverActionInput,
-  CreateDriversBatchActionInput,
   DashboardResponse,
+  ImportConstructorDriversInput,
+  ImportConstructorDriversResponse,
   ReportRowsResponse,
-  SearchConstructorDriverInput,
-  SearchConstructorDriverResponse,
   SeasonsResponse
 } from "./types";
 
@@ -112,24 +111,24 @@ export async function createDriverAction(input: CreateDriverActionInput) {
   return response.data;
 }
 
-export async function searchConstructorDriverAction(
-  input: SearchConstructorDriverInput
-) {
-  const response = await api.get<SearchConstructorDriverResponse>(
+export async function searchConstructorDriversAction(familyName: string) {
+  const response = await api.get<ConstructorDriverSearchResponse>(
     "/actions/constructor/drivers/search",
     {
-      params: input
+      params: {
+        family_name: familyName
+      }
     }
   );
 
   return response.data;
 }
 
-export async function createConstructorDriversBatchAction(
-  input: CreateDriversBatchActionInput
+export async function importConstructorDriversAction(
+  input: ImportConstructorDriversInput
 ) {
-  const response = await api.post<CreateDriversBatchActionResponse>(
-    "/actions/constructor/drivers/batch",
+  const response = await api.post<ImportConstructorDriversResponse>(
+    "/actions/constructor/drivers/import",
     input
   );
 

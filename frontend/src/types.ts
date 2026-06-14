@@ -125,31 +125,28 @@ export type CreateDriverActionInput = {
   country_id: number;
 };
 
-export type SearchConstructorDriverInput = {
-  family_name: string;
+export type ConstructorDriverSearchResult = {
+  driverId: number;
+  fullName: string;
+  dateOfBirth: string;
+  countryName: string | null;
+  nationality: string;
 };
 
-export type SearchConstructorDriverResponse = {
+export type ConstructorDriverSearchResponse = {
+  drivers: ConstructorDriverSearchResult[];
+};
+
+export type ImportConstructorDriversInput = {
+  content: string;
+  fileName: string;
+};
+
+export type ImportConstructorDriversResponse = {
+  insertedCount: number;
   drivers: Array<{
-    driver_ref: string;
-    driver_name: string;
-    date_of_birth: string;
-    country_name: string | null;
-    nationality: string | null;
-  }>;
-};
-
-export type CreateDriversBatchActionInput = {
-  drivers: CreateDriverActionInput[];
-};
-
-export type CreateDriversBatchActionResponse = {
-  drivers: Array<{
-    id: number;
-    driver_ref: string;
-    given_name: string;
-    family_name: string;
-    date_of_birth: string;
-    country_id: number;
+    driverId: number;
+    driverRef: string;
+    fullName: string;
   }>;
 };

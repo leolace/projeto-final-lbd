@@ -18,12 +18,14 @@ type CreateDriverInput = {
   country_id: number;
 };
 
-type CreateDriversBatchInput = {
-  drivers: CreateDriverInput[];
+type ImportDriversInput = {
+  content: string;
+  fileName: string;
 };
 
-type InsertedDriver = CreateDriverInput & {
-  id: number;
+type ImportDriverRow = CreateDriverInput & {
+  lineNumber: number;
+  nationality: string;
 };
 
 type PgError = {
@@ -149,7 +151,7 @@ export async function createDriverAction(user: AuthUser, body: unknown) {
   }
 }
 
-export async function searchConstructorDriverAction(
+export async function searchConstructorDriversAction(
   user: AuthUser,
   familyName: unknown
 ) {
@@ -160,60 +162,66 @@ export async function searchConstructorDriverAction(
   }
 
   const result = await query<{
-    driver_ref: string;
-    driver_name: string;
-    date_of_birth: string;
     country_name: string | null;
-    nationality: string | null;
+    date_of_birth: string;
+    driver_id: number;
+    full_name: string;
+    nationality: string;
   }>(
     `
       select distinct
-        d.driver_ref,
-        d.given_name || ' ' || d.family_name as driver_name,
+        d.id as driver_id,
+        d.given_name || ' ' || d.family_name as full_name,
         d.date_of_birth::text as date_of_birth,
         co.name as country_name,
-        co.nationality
+        d.nationality
       from constructors c
       join results r on r.constructor_id = c.id
       join drivers d on d.id = r.driver_id
       left join countries co on co.id = d.country_id
       where c.constructor_ref = $1
         and lower(d.family_name) = lower($2)
-      order by driver_name asc
+      order by full_name asc
     `,
     [user.idOriginal, familyName.trim()]
   );
 
   return {
-    drivers: result.rows
+    drivers: result.rows.map((driver) => ({
+      driverId: driver.driver_id,
+      fullName: driver.full_name,
+      dateOfBirth: driver.date_of_birth,
+      countryName: driver.country_name,
+      nationality: driver.nationality
+    }))
   };
 }
 
-export async function createConstructorDriversBatchAction(
+export async function importConstructorDriversAction(
   user: AuthUser,
   body: unknown
 ) {
   requireConstructor(user);
 
-  const input = parseDriversBatchInput(body);
-  await ensureUniqueDriverNames(input.drivers);
+  const input = parseImportDriversInput(body);
+  const rows = await parseImportDriverRows(input);
+
+  await validateNoExistingDriversByName(rows);
+  await validateNoExistingDriverRefs(rows);
 
   const client = await pool.connect();
 
   try {
     await client.query("begin");
 
-    const insertedDrivers: InsertedDriver[] = [];
+    const insertedDrivers = [];
 
-    for (const driver of input.drivers) {
-      const nationality = await getCountryNationality(driver.country_id);
+    for (const row of rows) {
       const result = await client.query<{
         id: number;
         driver_ref: string;
-        given_name: string;
         family_name: string;
-        date_of_birth: string;
-        country_id: number;
+        given_name: string;
       }>(
         `
           insert into drivers (
@@ -229,17 +237,15 @@ export async function createConstructorDriversBatchAction(
             id,
             driver_ref,
             given_name,
-            family_name,
-            date_of_birth::text as date_of_birth,
-            country_id
+            family_name
         `,
         [
-          driver.driver_ref,
-          driver.given_name,
-          driver.family_name,
-          nationality,
-          driver.date_of_birth,
-          driver.country_id
+          row.driver_ref,
+          row.given_name,
+          row.family_name,
+          row.nationality,
+          row.date_of_birth,
+          row.country_id
         ]
       );
 
@@ -249,7 +255,12 @@ export async function createConstructorDriversBatchAction(
     await client.query("commit");
 
     return {
-      drivers: insertedDrivers
+      insertedCount: insertedDrivers.length,
+      drivers: insertedDrivers.map((driver) => ({
+        driverId: driver.id,
+        driverRef: driver.driver_ref,
+        fullName: `${driver.given_name} ${driver.family_name}`
+      }))
     };
   } catch (error) {
     await client.query("rollback");
@@ -293,6 +304,28 @@ async function getCountryNationality(countryId: number) {
   return nationality;
 }
 
+async function getCountriesNationalityMap(countryIds: number[]) {
+  const result = await query<{
+    id: number;
+    nationality: string | null;
+  }>(
+    `
+      select
+        id,
+        nationality
+      from countries
+      where id = any($1::int[])
+    `,
+    [countryIds]
+  );
+
+  return new Map(
+    result.rows
+      .filter((country) => Boolean(country.nationality))
+      .map((country) => [country.id, country.nationality as string])
+  );
+}
+
 function parseConstructorInput(body: unknown): CreateConstructorInput {
   const value = getObjectBody(body);
 
@@ -321,50 +354,137 @@ function parseDriverInput(body: unknown): CreateDriverInput {
   };
 }
 
-function parseDriversBatchInput(body: unknown): CreateDriversBatchInput {
+function parseImportDriversInput(body: unknown): ImportDriversInput {
   const value = getObjectBody(body);
-  const drivers = value.drivers;
-
-  if (!Array.isArray(drivers) || drivers.length === 0) {
-    throw new HttpError(400, "Missing drivers");
-  }
-
-  if (drivers.length > 100) {
-    throw new HttpError(400, "O arquivo deve conter no máximo 100 pilotos");
-  }
 
   return {
-    drivers: drivers.map((driver) => parseDriverInput(driver))
+    content: getRequiredString(value, "content"),
+    fileName: getRequiredString(value, "fileName")
   };
 }
 
-async function ensureUniqueDriverNames(drivers: CreateDriverInput[]) {
-  const uniqueNames = new Set<string>();
+async function parseImportDriverRows(input: ImportDriversInput) {
+  const parsedRows = input.content
+    .split(/\r?\n/)
+    .map((line, index) => ({
+      line: line.trim(),
+      lineNumber: index + 1
+    }))
+    .filter((row) => row.line.length > 0);
 
-  for (const driver of drivers) {
-    const key = createDriverNameKey(driver.given_name, driver.family_name);
-
-    if (uniqueNames.has(key)) {
-      throw new HttpError(
-        409,
-        `Piloto duplicado no arquivo: ${driver.given_name} ${driver.family_name}`
-      );
-    }
-
-    uniqueNames.add(key);
+  if (parsedRows.length === 0) {
+    throw new HttpError(400, "Arquivo sem pilotos para importar");
   }
 
+  const dataRows = isImportHeader(parsedRows[0]?.line)
+    ? parsedRows.slice(1)
+    : parsedRows;
+
+  if (dataRows.length === 0) {
+    throw new HttpError(400, "Arquivo sem pilotos para importar");
+  }
+
+  const rows = dataRows.map((row) => parseImportDriverRow(row.line, row.lineNumber));
+  const duplicateName = findDuplicate(rows, (row) =>
+    `${row.given_name.trim().toLowerCase()}|${row.family_name.trim().toLowerCase()}`
+  );
+
+  if (duplicateName) {
+    throw new HttpError(
+      400,
+      `Piloto duplicado no arquivo: ${duplicateName.given_name} ${duplicateName.family_name}`
+    );
+  }
+
+  const duplicateRef = findDuplicate(rows, (row) => row.driver_ref.trim().toLowerCase());
+
+  if (duplicateRef) {
+    throw new HttpError(400, `driver_ref duplicado no arquivo: ${duplicateRef.driver_ref}`);
+  }
+
+  const countryIds = Array.from(new Set(rows.map((row) => row.country_id)));
+  const countriesNationality = await getCountriesNationalityMap(countryIds);
+  const missingCountryId = countryIds.find((countryId) => !countriesNationality.has(countryId));
+
+  if (missingCountryId) {
+    throw new HttpError(400, `Country not found or missing nationality: ${missingCountryId}`);
+  }
+
+  return rows.map((row) => ({
+    ...row,
+    nationality: countriesNationality.get(row.country_id) as string
+  }));
+}
+
+function parseImportDriverRow(line: string, lineNumber: number): ImportDriverRow {
+  const columns = line.split(",").map((column) => column.trim());
+
+  if (columns.length !== 5) {
+    throw new HttpError(400, `Linha ${lineNumber} deve conter 5 colunas`);
+  }
+
+  const [driverRef, givenName, familyName, dateOfBirth, countryId] = columns;
+
+  if (!isIsoDate(dateOfBirth)) {
+    throw new HttpError(400, `Linha ${lineNumber} possui date_of_birth inválido`);
+  }
+
+  return {
+    driver_ref: validateImportString(driverRef, "driver_ref", lineNumber),
+    given_name: validateImportString(givenName, "given_name", lineNumber),
+    family_name: validateImportString(familyName, "family_name", lineNumber),
+    date_of_birth: dateOfBirth,
+    country_id: validateImportCountryId(countryId, lineNumber),
+    lineNumber,
+    nationality: ""
+  };
+}
+
+function isImportHeader(line?: string) {
+  return (
+    line?.toLowerCase() ===
+    "driver_ref,given_name,family_name,date_of_birth,country_id"
+  );
+}
+
+function validateImportString(
+  value: string,
+  key: string,
+  lineNumber: number
+) {
+  if (value.length === 0) {
+    throw new HttpError(400, `Linha ${lineNumber} sem ${key}`);
+  }
+
+  return value;
+}
+
+function validateImportCountryId(value: string, lineNumber: number) {
+  const countryId = Number(value);
+
+  if (!Number.isInteger(countryId) || countryId <= 0) {
+    throw new HttpError(400, `Linha ${lineNumber} possui country_id inválido`);
+  }
+
+  return countryId;
+}
+
+async function validateNoExistingDriversByName(rows: ImportDriverRow[]) {
   const result = await query<{
-    given_name: string;
     family_name: string;
+    given_name: string;
   }>(
     `
-      select given_name, family_name
-      from drivers
-      where lower(given_name || ' ' || family_name) = any($1::text[])
+      select
+        d.given_name,
+        d.family_name
+      from drivers d
+      join unnest($1::text[], $2::text[]) as imported(given_name, family_name)
+        on lower(d.given_name) = lower(imported.given_name)
+       and lower(d.family_name) = lower(imported.family_name)
       limit 1
     `,
-    [Array.from(uniqueNames)]
+    [rows.map((row) => row.given_name), rows.map((row) => row.family_name)]
   );
 
   const existingDriver = result.rows[0];
@@ -377,8 +497,43 @@ async function ensureUniqueDriverNames(drivers: CreateDriverInput[]) {
   }
 }
 
-function createDriverNameKey(givenName: string, familyName: string) {
-  return `${givenName} ${familyName}`.trim().toLowerCase();
+async function validateNoExistingDriverRefs(rows: ImportDriverRow[]) {
+  const result = await query<{
+    driver_ref: string;
+  }>(
+    `
+      select driver_ref
+      from drivers
+      where lower(driver_ref) = any($1::text[])
+      limit 1
+    `,
+    [rows.map((row) => row.driver_ref.toLowerCase())]
+  );
+
+  const existingDriver = result.rows[0];
+
+  if (existingDriver) {
+    throw new HttpError(409, `driver_ref já cadastrado: ${existingDriver.driver_ref}`);
+  }
+}
+
+function findDuplicate<TRow>(
+  rows: TRow[],
+  getKey: (row: TRow) => string
+) {
+  const seen = new Set<string>();
+
+  for (const row of rows) {
+    const key = getKey(row);
+
+    if (seen.has(key)) {
+      return row;
+    }
+
+    seen.add(key);
+  }
+
+  return null;
 }
 
 function getObjectBody(body: unknown) {

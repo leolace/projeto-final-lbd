@@ -8,8 +8,8 @@ Seu objetivo como IA é **produzir código de alta qualidade, consistente com os
 
 O projeto é um **monorepo** gerenciado com **pnpm**, dividido em duas aplicações principais:
 
-- `/client` - Aplicação Frontend Mobile construída com **React, Typescript, Vite** e **Tailwind**.
-- `/server` - Aplicação Backend API construída com **ExpressJs** e **Pg**.
+- `/frontend` - Aplicação Frontend Mobile construída com **React, Typescript, Vite** e **Tailwind**.
+- `/backend` - Aplicação Backend API construída com **ExpressJs** e **Pg**.
 
 ### 1.1 Regras Universais para IAs
 - **Nunca improvise padrões:** Leia as regras antes de tomar decisões estruturais.
@@ -21,9 +21,9 @@ O projeto é um **monorepo** gerenciado com **pnpm**, dividido em duas aplicaç�
 
 ---
 
-## 2. Frontend (`/client`)
+## 2. Frontend (`/frontend`)
 
-A pasta `client` é uma aplicação React Native gerenciada pelo Expo.
+A pasta `frontend` é uma aplicação React Native gerenciada pelo Expo.
 
 ### 2.1 Tecnologias Essenciais
 - **Framework:** React + Vite + TypeScript.
@@ -50,9 +50,9 @@ A estrutura deve seguir o padrão de componentes isolados:
 
 ---
 
-## 3. Backend (`/server`)
+## 3. Backend (`/backend`)
 
-A pasta `server` é uma API REST modular construída com ExpressJs.
+A pasta `backend` é uma API REST modular construída com ExpressJs.
 
 ### 3.1 Tecnologias Essenciais
 - **Framework:** ExpressJs + TypeScript.
