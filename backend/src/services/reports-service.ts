@@ -22,6 +22,29 @@ type Counted<T extends Record<string, unknown>> = T & {
   total_count: string | number;
 };
 
+type ConstructorRaceReportRow = {
+  constructor_id: number;
+  constructor_name: string;
+  drivers_count: number | string;
+};
+
+type CircuitRaceReportRow = {
+  total_races: number | string;
+  circuit_id: number;
+  circuit_name: string;
+  races_count: number | string;
+  min_laps: number | string;
+  avg_laps: number | string;
+  max_laps: number | string;
+  race_id: number | null;
+  race_name: string | null;
+  season_year: number | null;
+  race_date: string | null;
+  round: number | null;
+  laps_count: number | string | null;
+  drivers_count: number | string | null;
+};
+
 function createPaginatedReport(
   rows: Counted<Record<string, unknown>>[],
   pagination: PaginationInput
@@ -116,6 +139,150 @@ export async function getAdminAirportsByCityReport(
   );
 
   return createPaginatedReport(result.rows, pagination);
+}
+
+export async function getAdminConstructorsRacesReport() {
+  // O relatório usa junções, LEFT JOIN, agregações, agrupamentos e contagem
+  // distinta para manter escuderias sem resultados e circuitos sem corridas.
+  const [constructorsResult, circuitsResult] = await Promise.all([
+    query<ConstructorRaceReportRow>(`
+      select
+        c.id as constructor_id,
+        c.name as constructor_name,
+        count(distinct r.driver_id)::int as drivers_count
+      from constructors c
+      left join results r on r.constructor_id = c.id
+      group by c.id, c.name
+      order by c.name asc
+    `),
+    query<CircuitRaceReportRow>(`
+      with race_stats as (
+        select
+          ra.id::int as race_id,
+          ra.race_name,
+          s.year as season_year,
+          ra.race_date::text as race_date,
+          ra.round,
+          ra.circuit_id,
+          coalesce(max(r.laps), 0)::float as laps_count,
+          count(distinct r.driver_id)::int as drivers_count
+        from races ra
+        join seasons s on s.id = ra.season_id
+        left join results r on r.race_id = ra.id
+        group by
+          ra.id,
+          ra.race_name,
+          s.year,
+          ra.race_date,
+          ra.round,
+          ra.circuit_id
+      ),
+      circuit_stats as (
+        select
+          ci.id as circuit_id,
+          ci.name as circuit_name,
+          count(rs.race_id)::int as races_count,
+          coalesce(min(rs.laps_count), 0)::float as min_laps,
+          coalesce(round(avg(rs.laps_count)::numeric, 2), 0)::float as avg_laps,
+          coalesce(max(rs.laps_count), 0)::float as max_laps
+        from circuits ci
+        left join race_stats rs on rs.circuit_id = ci.id
+        group by ci.id, ci.name
+      )
+      select
+        (select count(*)::int from race_stats) as total_races,
+        cs.circuit_id,
+        cs.circuit_name,
+        cs.races_count,
+        cs.min_laps,
+        cs.avg_laps,
+        cs.max_laps,
+        rs.race_id,
+        rs.race_name,
+        rs.season_year,
+        rs.race_date,
+        rs.round,
+        rs.laps_count,
+        rs.drivers_count
+      from circuit_stats cs
+      left join race_stats rs on rs.circuit_id = cs.circuit_id
+      order by
+        cs.circuit_name asc,
+        rs.race_date asc nulls last,
+        rs.season_year asc nulls last,
+        rs.round asc nulls last
+    `)
+  ]);
+
+  const circuits = new Map<
+    number,
+    {
+      circuitId: number;
+      circuitName: string;
+      racesCount: number;
+      minLaps: number;
+      avgLaps: number;
+      maxLaps: number;
+      races: Array<{
+        raceId: number;
+        raceName: string;
+        seasonYear: number;
+        raceDate: string;
+        round: number;
+        lapsCount: number;
+        driversCount: number;
+      }>;
+    }
+  >();
+
+  // As linhas relacionais são agrupadas em memória para formar os três níveis
+  // hierárquicos sem executar uma consulta adicional para cada circuito.
+  for (const row of circuitsResult.rows) {
+    let circuit = circuits.get(row.circuit_id);
+
+    if (!circuit) {
+      circuit = {
+        circuitId: row.circuit_id,
+        circuitName: row.circuit_name,
+        racesCount: Number(row.races_count),
+        minLaps: Number(row.min_laps),
+        avgLaps: Number(row.avg_laps),
+        maxLaps: Number(row.max_laps),
+        races: []
+      };
+      circuits.set(row.circuit_id, circuit);
+    }
+
+    if (
+      row.race_id !== null &&
+      row.race_name !== null &&
+      row.season_year !== null &&
+      row.race_date !== null &&
+      row.round !== null
+    ) {
+      circuit.races.push({
+        raceId: row.race_id,
+        raceName: row.race_name,
+        seasonYear: row.season_year,
+        raceDate: row.race_date,
+        round: row.round,
+        lapsCount: Number(row.laps_count ?? 0),
+        driversCount: Number(row.drivers_count ?? 0)
+      });
+    }
+  }
+
+  return {
+    constructors: constructorsResult.rows.map((row) => ({
+      constructorId: row.constructor_id,
+      constructorName: row.constructor_name,
+      driversCount: Number(row.drivers_count)
+    })),
+    racesHierarchy: {
+      totalRaces: Number(circuitsResult.rows[0]?.total_races ?? 0),
+      circuits: Array.from(circuits.values())
+    }
+  };
 }
 
 export async function getConstructorDriverWinsReport(

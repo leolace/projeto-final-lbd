@@ -100,6 +100,40 @@ export type ReportRowsResponse = {
   };
 };
 
+export type ConstructorReportItem = {
+  constructorId: number;
+  constructorName: string;
+  driversCount: number;
+};
+
+export type RaceHierarchyItem = {
+  raceId: number;
+  raceName: string;
+  seasonYear: number;
+  raceDate: string;
+  round: number;
+  lapsCount: number;
+  driversCount: number;
+};
+
+export type CircuitHierarchyItem = {
+  circuitId: number;
+  circuitName: string;
+  racesCount: number;
+  minLaps: number;
+  avgLaps: number;
+  maxLaps: number;
+  races: RaceHierarchyItem[];
+};
+
+export type AdminConstructorsRacesReportResponse = {
+  constructors: ConstructorReportItem[];
+  racesHierarchy: {
+    totalRaces: number;
+    circuits: CircuitHierarchyItem[];
+  };
+};
+
 export type ActionCountry = {
   id: number;
   name: string;

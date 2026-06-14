@@ -12,6 +12,7 @@ import { HomeRedirect } from "./pages/HomeRedirect";
 import { LoginPage } from "./pages/LoginPage";
 import { ReportsPage } from "./pages/ReportsPage";
 import { AdminAirportsByCityReportPage } from "./pages/reports/admin/airports-by-city";
+import { AdminConstructorsRacesReportPage } from "./pages/reports/admin/constructors-races";
 import { AdminStatusCountsReportPage } from "./pages/reports/admin/status-counts";
 import { ConstructorDriverWinsReportPage } from "./pages/reports/constructor/driver-wins";
 import { ConstructorStatusCountsReportPage } from "./pages/reports/constructor/status-counts";
@@ -67,6 +68,14 @@ const router = createBrowserRouter([
                 element: (
                   <ReportAccess userType={UserType.Admin}>
                     <AdminAirportsByCityReportPage />
+                  </ReportAccess>
+                )
+              },
+              {
+                path: "reports/admin/constructors-races",
+                element: (
+                  <ReportAccess userType={UserType.Admin}>
+                    <AdminConstructorsRacesReportPage />
                   </ReportAccess>
                 )
               },

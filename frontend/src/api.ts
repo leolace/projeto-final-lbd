@@ -1,6 +1,7 @@
 import axios, { AxiosError } from "axios";
 import type {
   ActionCountriesResponse,
+  AdminConstructorsRacesReportResponse,
   AuthUser,
   ConstructorDriverSearchResponse,
   CreateConstructorActionInput,
@@ -151,6 +152,14 @@ export async function getReportRows(
       ...params
     }
   });
+
+  return response.data;
+}
+
+export async function getAdminConstructorsRacesReport() {
+  const response = await api.get<AdminConstructorsRacesReportResponse>(
+    "/reports/admin/constructors-races"
+  );
 
   return response.data;
 }

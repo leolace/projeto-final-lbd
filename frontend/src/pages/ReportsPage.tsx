@@ -13,6 +13,11 @@ import {
   title as adminStatusCountsTitle
 } from "./reports/admin/status-counts/utils";
 import {
+  description as adminConstructorsRacesDescription,
+  icon as adminConstructorsRacesIcon,
+  title as adminConstructorsRacesTitle
+} from "./reports/admin/constructors-races/utils";
+import {
   description as constructorDriverWinsDescription,
   icon as constructorDriverWinsIcon,
   title as constructorDriverWinsTitle
@@ -54,6 +59,12 @@ function getReportLinks(userType: UserType): ReportLink[] {
         icon: adminAirportsByCityIcon,
         title: adminAirportsByCityTitle,
         to: "/reports/admin/airports-by-city",
+      },
+      {
+        description: adminConstructorsRacesDescription,
+        icon: adminConstructorsRacesIcon,
+        title: adminConstructorsRacesTitle,
+        to: "/reports/admin/constructors-races",
       },
     ];
   }
