@@ -1,6 +1,7 @@
 import axios, { AxiosError } from "axios";
 import type {
   ActionCountriesResponse,
+  AdminConstructorsRacesReportResponse,
   AuthUser,
   ConstructorDriverSearchResponse,
   CreateConstructorActionInput,
@@ -73,6 +74,10 @@ export async function getCurrentUser() {
   return response.data.user;
 }
 
+export async function logoutRequest() {
+  await api.post("/auth/logout");
+}
+
 export async function getDashboard(params?: { season?: number }) {
   const response = await api.get<DashboardResponse>("/dashboard", {
     params
@@ -138,11 +143,23 @@ export type ReportPaginationParams = {
 
 export async function getReportRows(
   path: string,
-  pagination: ReportPaginationParams
+  pagination: ReportPaginationParams,
+  params: Record<string, string | number | undefined> = {}
 ) {
   const response = await api.get<ReportRowsResponse>(path, {
-    params: pagination
+    params: {
+      ...pagination,
+      ...params
+    }
   });
+
+  return response.data;
+}
+
+export async function getAdminConstructorsRacesReport() {
+  const response = await api.get<AdminConstructorsRacesReportResponse>(
+    "/reports/admin/constructors-races"
+  );
 
   return response.data;
 }

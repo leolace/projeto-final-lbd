@@ -4,7 +4,7 @@ import {
   createDriverAction,
   getActionCountries,
   importConstructorDriversAction,
-  searchConstructorDriversAction
+  searchConstructorDriversAction,
 } from "../../api";
 
 export function useActionCountries() {
@@ -12,7 +12,7 @@ export function useActionCountries() {
     queryKey: ["actions", "countries"],
     queryFn: getActionCountries,
     refetchOnMount: false,
-    refetchOnWindowFocus: false
+    refetchOnWindowFocus: false,
   });
 }
 
@@ -24,9 +24,9 @@ export function useCreateConstructorAction() {
     onSuccess: async () => {
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ["dashboard"] }),
-        queryClient.invalidateQueries({ queryKey: ["reports"] })
+        queryClient.invalidateQueries({ queryKey: ["reports"] }),
       ]);
-    }
+    },
   });
 }
 
@@ -38,15 +38,15 @@ export function useCreateDriverAction() {
     onSuccess: async () => {
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ["dashboard"] }),
-        queryClient.invalidateQueries({ queryKey: ["reports"] })
+        queryClient.invalidateQueries({ queryKey: ["reports"] }),
       ]);
-    }
+    },
   });
 }
 
 export function useSearchConstructorDriversAction() {
   return useMutation({
-    mutationFn: searchConstructorDriversAction
+    mutationFn: searchConstructorDriversAction,
   });
 }
 
@@ -58,8 +58,8 @@ export function useImportConstructorDriversAction() {
     onSuccess: async () => {
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ["dashboard"] }),
-        queryClient.invalidateQueries({ queryKey: ["reports"] })
+        queryClient.invalidateQueries({ queryKey: ["reports"] }),
       ]);
-    }
+    },
   });
 }
