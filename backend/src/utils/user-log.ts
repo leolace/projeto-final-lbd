@@ -13,6 +13,8 @@ export async function createUserLog({
   ipAddress
 }: CreateUserLogInput) {
   try {
+    // A auditoria é informativa: registra a ação, mas nunca deve impedir que a
+    // operação principal da API seja concluída.
     await query(
       `
         insert into users_log (userId, action, ip_address)

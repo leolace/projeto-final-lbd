@@ -9,6 +9,8 @@ export function auditUserAction(
   response: Response,
   next: NextFunction
 ) {
+  // O log é gravado após a resposta, quando o status HTTP final já é conhecido.
+  // Isso evita alterar a resposta principal caso a auditoria falhe.
   response.once("finish", () => {
     const user = request.user;
 
@@ -27,6 +29,8 @@ export function auditUserAction(
 }
 
 function createActionDescription(request: Request, statusCode: number) {
+  // A query string é descartada para não persistir filtros, tokens ou dados
+  // sensíveis nos logs de auditoria.
   const path = request.originalUrl.split("?", 1)[0] ?? request.path;
 
   if (request.method === "POST" && path === "/auth/logout") {

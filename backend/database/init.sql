@@ -453,6 +453,8 @@ CREATE INDEX IF NOT EXISTS idx_standings_season_id ON standings(season_id);
 -- FUNÇÕES DE DASHBOARD
 -- =========================================================
 
+-- Consolida os principais indicadores exibidos no dashboard de uma escuderia:
+-- total de vitórias, quantidade de pilotos associados e intervalo de anos com resultados.
 CREATE OR REPLACE FUNCTION get_constructor_dashboard_stats(
     p_constructor_ref TEXT
 )
@@ -482,6 +484,8 @@ AS $$
     GROUP BY c.id, c.name;
 $$;
 
+-- Retorna os dados principais do dashboard de um piloto, incluindo seu nome,
+-- a escuderia mais recente nos resultados e o intervalo de anos em que competiu.
 CREATE OR REPLACE FUNCTION get_driver_dashboard_stats(
     p_driver_ref TEXT
 )
@@ -523,6 +527,8 @@ AS $$
     WHERE d.driver_ref = p_driver_ref;
 $$;
 
+-- Agrega o desempenho de um piloto por temporada e circuito para o dashboard:
+-- pontos somados, vitórias e quantidade de corridas distintas.
 CREATE OR REPLACE FUNCTION get_driver_year_circuit_stats(
     p_driver_ref TEXT
 )
@@ -558,6 +564,8 @@ $$;
 -- VISÕES E FUNÇÕES DE RELATÓRIOS
 -- =========================================================
 
+-- Lista os pilotos que correram por uma escuderia e conta quantas vitórias
+-- cada um obteve, considerando posição final igual a primeiro lugar.
 CREATE OR REPLACE FUNCTION get_constructor_driver_wins(
     p_constructor_ref TEXT
 )
@@ -579,6 +587,8 @@ AS $$
     ORDER BY wins_count DESC, driver_name ASC;
 $$;
 
+-- Conta os resultados por status para uma escuderia autenticada.
+-- O LEFT JOIN mantém status sem resultados, retornando contagem zero.
 CREATE OR REPLACE FUNCTION get_constructor_status_counts(
     p_constructor_ref TEXT
 )
@@ -604,6 +614,8 @@ AS $$
     ORDER BY results_count DESC, status_name ASC;
 $$;
 
+-- Relatório do piloto autenticado com pontos por temporada e detalhamento
+-- das corridas em que ele pontuou.
 CREATE OR REPLACE FUNCTION get_driver_year_points_report(
     p_driver_ref TEXT
 )
@@ -635,6 +647,8 @@ AS $$
     ORDER BY s.year DESC, ra.race_date ASC, ra.race_name ASC;
 $$;
 
+-- Conta os resultados por status para um piloto autenticado.
+-- O LEFT JOIN mantém status sem resultados, retornando contagem zero.
 CREATE OR REPLACE FUNCTION get_driver_status_counts(
     p_driver_ref TEXT
 )
@@ -703,6 +717,12 @@ CREATE TABLE IF NOT EXISTS users_escuderia (
     FOREIGN KEY (userId) REFERENCES users(userId) ON DELETE CASCADE
 );
 
+-- =========================================================
+-- TRIGGERS DE SINCRONIZAÇÃO DE USUÁRIOS
+-- =========================================================
+
+-- Mantém automaticamente um usuário de login para cada piloto criado ou atualizado.
+-- O login usa o driver_ref com sufixo "_d" e a senha inicial usa o próprio driver_ref.
 CREATE OR REPLACE FUNCTION sync_user_from_driver()
 RETURNS TRIGGER
 LANGUAGE plpgsql
@@ -754,6 +774,8 @@ BEGIN
 END;
 $$;
 
+-- Mantém automaticamente um usuário de login para cada escuderia criada ou atualizada.
+-- O login usa o constructor_ref com sufixo "_c" e a senha inicial usa o próprio constructor_ref.
 CREATE OR REPLACE FUNCTION sync_user_from_constructor()
 RETURNS TRIGGER
 LANGUAGE plpgsql
@@ -805,6 +827,8 @@ BEGIN
 END;
 $$;
 
+-- Recria o trigger responsável por sincronizar usuários de pilotos.
+-- O DROP garante idempotência quando o script de estrutura é executado mais de uma vez.
 DROP TRIGGER IF EXISTS trg_sync_user_from_driver ON drivers;
 
 CREATE TRIGGER trg_sync_user_from_driver
@@ -812,6 +836,8 @@ AFTER INSERT OR UPDATE ON drivers
 FOR EACH ROW
 EXECUTE FUNCTION sync_user_from_driver();
 
+-- Recria o trigger responsável por sincronizar usuários de escuderias.
+-- O DROP garante idempotência quando o script de estrutura é executado mais de uma vez.
 DROP TRIGGER IF EXISTS trg_sync_user_from_constructor ON constructors;
 
 CREATE TRIGGER trg_sync_user_from_constructor

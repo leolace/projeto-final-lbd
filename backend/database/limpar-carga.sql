@@ -1,5 +1,9 @@
 BEGIN;
 
+-- Remove apenas os dados carregados nas tabelas de domínio e de Fórmula 1,
+-- preservando a estrutura, funções, triggers e tabelas de usuários da aplicação.
+-- O RESTART IDENTITY reinicia as sequências para permitir uma nova carga limpa.
+-- O CASCADE resolve dependências de chaves estrangeiras entre as tabelas listadas.
 TRUNCATE TABLE
   constructor_standings,
   driver_standings,

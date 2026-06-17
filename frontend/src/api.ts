@@ -19,6 +19,8 @@ export const api = axios.create({
   baseURL: import.meta.env.VITE_API_URL ?? "http://localhost:3000"
 });
 
+// Centraliza o envio do token para que páginas, hooks e serviços não precisem
+// repetir a regra de autenticação em cada chamada HTTP.
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem(tokenStorageKey);
 
@@ -42,6 +44,8 @@ export function clearStoredToken() {
 }
 
 export function getApiErrorMessage(error: unknown) {
+  // A API padroniza erros em response.data.error; quando não houver esse formato,
+  // mantemos uma mensagem segura para exibição na interface.
   if (error instanceof AxiosError) {
     const message = error.response?.data?.error;
 

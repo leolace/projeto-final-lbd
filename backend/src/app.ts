@@ -31,6 +31,8 @@ app.get("/db/ping", async (_request, response, next) => {
   }
 });
 
+// O middleware de auditoria precisa ficar antes dos routers para observar todas
+// as respostas autenticadas no evento "finish", inclusive quando o handler falha.
 app.use(auditUserAction);
 
 app.use("/auth", authRouter);
