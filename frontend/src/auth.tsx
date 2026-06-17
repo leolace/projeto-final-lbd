@@ -1,26 +1,30 @@
-import { useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   createContext,
   useCallback,
   useContext,
+  useEffect,
   useMemo,
   useState,
-  type ReactNode
+  type ReactNode,
 } from "react";
 import {
   clearStoredToken,
+  getCurrentUser,
   getStoredToken,
   loginRequest,
   logoutRequest,
-  setStoredToken
+  setStoredToken,
 } from "./api";
 import type { AuthUser } from "./types";
+import { LoginLoadingState } from "./components/login-loading-state";
 
 const userStorageKey = "projeto-final:user";
 
 type AuthContextValue = {
   token: string | null;
   user: AuthUser | null;
+  isLoadingUser: boolean;
   isAuthenticated: boolean;
   login: (login: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
@@ -28,34 +32,38 @@ type AuthContextValue = {
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
-function getStoredUser() {
-  const value = localStorage.getItem(userStorageKey);
-
-  if (!value) {
-    return null;
-  }
-
-  try {
-    return JSON.parse(value) as AuthUser;
-  } catch {
-    localStorage.removeItem(userStorageKey);
-    return null;
-  }
-}
-
 export function AuthProvider({ children }: { children: ReactNode }) {
   const queryClient = useQueryClient();
   const [token, setToken] = useState(() => getStoredToken());
-  const [user, setUser] = useState<AuthUser | null>(() => getStoredUser());
+  const userQuery = useQuery({
+    enabled: Boolean(token),
+    queryKey: ["auth", "me", token],
+    queryFn: getCurrentUser,
+    retry: false,
+  });
+  const isAuthenticated = Boolean(token && userQuery.data);
+  const isLoadingUser = Boolean(token && userQuery.isLoading);
+  const user = isAuthenticated ? (userQuery.data ?? null) : null;
 
-  const login = useCallback(async (loginValue: string, password: string) => {
-    const result = await loginRequest(loginValue, password);
+  useEffect(() => {
+    if (token && userQuery.isError) {
+      clearStoredToken();
+      localStorage.removeItem(userStorageKey);
+      setToken(null);
+      queryClient.removeQueries({ queryKey: ["auth", "me"] });
+    }
+  }, [queryClient, token, userQuery.isError]);
 
-    setStoredToken(result.token);
-    localStorage.setItem(userStorageKey, JSON.stringify(result.user));
-    setToken(result.token);
-    setUser(result.user);
-  }, []);
+  const login = useCallback(
+    async (loginValue: string, password: string) => {
+      const result = await loginRequest(loginValue, password);
+
+      setStoredToken(result.token);
+      setToken(result.token);
+      queryClient.setQueryData(["auth", "me", result.token], result.user);
+    },
+    [queryClient],
+  );
 
   const logout = useCallback(async () => {
     if (getStoredToken()) {
@@ -69,22 +77,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     clearStoredToken();
     localStorage.removeItem(userStorageKey);
     setToken(null);
-    setUser(null);
     queryClient.clear();
   }, [queryClient]);
 
-  const value = useMemo(
-    () => ({
-      token,
-      user,
-      isAuthenticated: Boolean(token && user),
-      login,
-      logout
-    }),
-    [login, logout, token, user]
-  );
+  if (isLoadingUser) {
+    return <LoginLoadingState />;
+  }
 
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+  return (
+    <AuthContext.Provider
+      value={{
+        token,
+        user,
+        isAuthenticated,
+        isLoadingUser,
+        login,
+        logout,
+      }}
+    >
+      {children}
+    </AuthContext.Provider>
+  );
 }
 
 export function useAuth() {

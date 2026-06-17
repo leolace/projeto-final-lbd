@@ -51,7 +51,7 @@ export async function login(loginValue: string, password: string) {
   const row = result.rows[0];
 
   if (!row) {
-    throw new HttpError(401, "Invalid login or password");
+    throw new HttpError(401, "Senha ou login inválidos");
   }
 
   const user = mapUser(row);
@@ -111,8 +111,8 @@ export function verifyToken(token: string): TokenPayload {
       };
     }
   } catch {
-    throw new HttpError(401, "Invalid or expired token");
+    throw new HttpError(401, "Token inválido ou expirado");
   }
 
-  throw new HttpError(401, "Invalid token payload");
+  throw new HttpError(401, "Payload de token inválido");
 }

@@ -1,13 +1,22 @@
-import { Navigate, Outlet, useLocation } from "react-router-dom";
+import { Navigate, Outlet } from "react-router-dom";
 import { useAuth } from "../auth";
+import { UserType } from "@/types";
 
-export function ProtectedRoute() {
-  const location = useLocation();
-  const { isAuthenticated } = useAuth();
+interface Props {
+  userType?: UserType[];
+  children?: React.ReactNode;
+}
 
-  if (!isAuthenticated) {
-    return <Navigate replace state={{ from: location }} to="/login" />;
+export function ProtectedRoute({ userType, children }: Props) {
+  const { isAuthenticated, user } = useAuth();
+
+  if (!isAuthenticated || !user) {
+    return <Navigate replace to="/login" />;
   }
 
-  return <Outlet />;
+  if (userType && !userType.includes(user.tipo)) {
+    return <Navigate replace to="/dashboard" />;
+  }
+
+  return children ? children : <Outlet />;
 }

@@ -20,7 +20,7 @@ export async function requireAuth(
     const authorization = request.header("authorization");
 
     if (!authorization?.startsWith("Bearer ")) {
-      throw new HttpError(401, "Missing bearer token");
+      throw new HttpError(401, "Bearer token não encontrado");
     }
 
     const token = authorization.slice("Bearer ".length);
@@ -28,7 +28,7 @@ export async function requireAuth(
     const user = await getUserById(payload.userId);
 
     if (!user) {
-      throw new HttpError(401, "Authenticated user not found");
+      throw new HttpError(401, "Usuário não encontrado");
     }
 
     request.user = user;

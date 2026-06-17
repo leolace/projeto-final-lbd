@@ -1,31 +1,24 @@
 import { useMutation } from "@tanstack/react-query";
 import { KeyRound, LogIn, User } from "lucide-react";
-import { FormEvent, useState } from "react";
-import { Navigate, useLocation, useNavigate } from "react-router-dom";
+import { SubmitEvent, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { getApiErrorMessage } from "../api";
 import { useAuth } from "../auth";
 
 export function LoginPage() {
-  const location = useLocation();
   const navigate = useNavigate();
-  const { isAuthenticated, login } = useAuth();
+  const { login } = useAuth();
   const [loginValue, setLoginValue] = useState("");
   const [password, setPassword] = useState("");
 
   const mutation = useMutation({
     mutationFn: () => login(loginValue, password),
     onSuccess: () => {
-      const from = (location.state as { from?: { pathname?: string } } | null)?.from
-        ?.pathname;
-      navigate(from ?? "/dashboard", { replace: true });
-    }
+      navigate("/dashboard", { replace: true });
+    },
   });
 
-  if (isAuthenticated) {
-    return <Navigate replace to="/dashboard" />;
-  }
-
-  const submit = (event: FormEvent<HTMLFormElement>) => {
+  const submit = (event: SubmitEvent) => {
     event.preventDefault();
     mutation.mutate();
   };
@@ -47,7 +40,10 @@ export function LoginPage() {
           className="rounded-lg border border-gray-300 bg-gray-50 p-6"
           onSubmit={submit}
         >
-          <label className="block text-sm font-medium text-black" htmlFor="login">
+          <label
+            className="block text-sm font-medium text-black"
+            htmlFor="login"
+          >
             Identificação
           </label>
           <div className="mt-2 flex h-11 items-center gap-2 rounded-md border border-gray-300 bg-white px-3 focus-within:border-black">
@@ -91,7 +87,7 @@ export function LoginPage() {
 
           <button
             className="mt-6 inline-flex h-11 w-full items-center justify-center gap-2 rounded-md border border-black bg-white px-4 text-sm font-semibold text-black transition hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-60"
-            disabled={mutation.isPending}
+            disabled={mutation.isPending || !loginValue || !password}
             type="submit"
           >
             <LogIn className="h-4 w-4" />
